@@ -24,6 +24,9 @@ import DashboardPage from './pages/dashboard/DashboardPage';
 import PaymentListPage from './pages/payments/PaymentListPage';
 import UserListPage from './pages/users/UserListPage';
 
+// Phase 6 Pages
+import ReportsPage from './pages/reports/ReportsPage';
+
 // Create a client
 const queryClient = new QueryClient();
 
@@ -45,6 +48,9 @@ function App() {
               {/* Protected Routes inside AppShell */}
               <Route element={<AppShell />}>
                 <Route path="/" element={<DashboardPage />} />
+                
+                {/* Phase 6 Analytics */}
+                <Route path="/reports" element={<ReportsPage />} />
                 
                 {/* Bookings & Payments (Phase 4/5) */}
                 <Route path="/bookings" element={<BookingListPage />} />

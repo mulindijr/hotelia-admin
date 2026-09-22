@@ -9,12 +9,14 @@ import {
   CreditCard,
   Settings,
   ShieldCheck,
-  Hotel
+  Hotel,
+  TrendingUp
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 const navItems = [
   { name: 'Dashboard', path: '/', icon: LayoutDashboard, permission: 'view reports' },
+  { name: 'Reports', path: '/reports', icon: TrendingUp, permission: 'view reports' },
   { name: 'Bookings', path: '/bookings', icon: CalendarCheck, permission: 'view bookings' },
   { name: 'Rooms & Grid', path: '/rooms', icon: Bed, permission: 'view rooms' },
   { name: 'Guests', path: '/guests', icon: Users, permission: 'view guests' },
