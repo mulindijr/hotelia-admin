@@ -1,0 +1,87 @@
+import React from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { Users, BedDouble, CalendarCheck, DollarSign, TrendingUp } from 'lucide-react';
+import { dashboardApi } from '../../api/dashboard';
+import { useHotel } from '../../context/HotelContext';
+import Card from '../../components/common/Card';
+
+const DashboardPage = () => {
+  const { activeHotelId } = useHotel();
+
+  const { data: statsData, isLoading } = useQuery({
+    queryKey: ['dashboardStats', activeHotelId],
+    queryFn: () => dashboardApi.getStats(activeHotelId),
+    enabled: !!activeHotelId,
+  });
+
+  if (!activeHotelId) {
+    return <div className="p-6 bg-white border border-zinc-200 rounded-xl">Please select an active hotel to view the dashboard.</div>;
+  }
+
+  // Placeholder stats if API fails or is empty for demo
+  const stats = statsData?.data || {
+    today_check_ins: 0,
+    today_check_outs: 0,
+    occupancy_rate: 0,
+    available_rooms: 0,
+    revenue_mtd: 0
+  };
+
+  const statCards = [
+    { label: 'Check-Ins Today', value: stats.today_check_ins, icon: CalendarCheck, color: 'text-blue-600', bg: 'bg-blue-50' },
+    { label: 'Check-Outs Today', value: stats.today_check_outs, icon: CalendarCheck, color: 'text-orange-600', bg: 'bg-orange-50' },
+    { label: 'Occupancy Rate', value: `${stats.occupancy_rate}%`, icon: BedDouble, color: 'text-indigo-600', bg: 'bg-indigo-50' },
+    { label: 'Available Rooms', value: stats.available_rooms, icon: Users, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+    { label: 'Revenue (MTD)', value: `$${Number(stats.revenue_mtd).toFixed(2)}`, icon: DollarSign, color: 'text-zinc-900', bg: 'bg-zinc-100' },
+  ];
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold text-zinc-900">Dashboard Overview</h1>
+        <p className="mt-1 text-sm text-zinc-500">Key metrics and performance for your property.</p>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        {statCards.map((stat, idx) => (
+          <div key={idx} className="bg-white p-5 rounded-xl border border-zinc-200 shadow-sm flex flex-col justify-center">
+            <div className="flex items-center gap-3 mb-3">
+              <div className={`p-2 rounded-lg ${stat.bg}`}>
+                <stat.icon className={`w-5 h-5 ${stat.color}`} />
+              </div>
+              <h3 className="text-sm font-medium text-zinc-500 line-clamp-1">{stat.label}</h3>
+            </div>
+            {isLoading ? (
+              <div className="h-8 bg-zinc-100 rounded animate-pulse w-1/2"></div>
+            ) : (
+              <p className="text-2xl font-bold text-zinc-900">{stat.value}</p>
+            )}
+          </div>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+        <Card title="Occupancy Trend (30 Days)">
+          <div className="h-64 flex items-center justify-center border-2 border-dashed border-zinc-100 rounded-lg">
+            <div className="text-center text-zinc-400">
+              <TrendingUp className="w-8 h-8 mx-auto mb-2 opacity-50" />
+              <p>Chart Visualization Area</p>
+              <p className="text-xs">Requires charting library (e.g. Recharts or Chart.js)</p>
+            </div>
+          </div>
+        </Card>
+        <Card title="Revenue Trend (30 Days)">
+          <div className="h-64 flex items-center justify-center border-2 border-dashed border-zinc-100 rounded-lg">
+            <div className="text-center text-zinc-400">
+              <TrendingUp className="w-8 h-8 mx-auto mb-2 opacity-50" />
+              <p>Chart Visualization Area</p>
+              <p className="text-xs">Requires charting library (e.g. Recharts or Chart.js)</p>
+            </div>
+          </div>
+        </Card>
+      </div>
+    </div>
+  );
+};
+
+export default DashboardPage;
