@@ -6,6 +6,15 @@ import { HotelProvider } from './context/HotelContext';
 import AppShell from './components/layout/AppShell';
 import LoginPage from './pages/auth/LoginPage';
 
+// Phase 3 Pages
+import HotelListPage from './pages/hotels/HotelListPage';
+import HotelSettingsPage from './pages/settings/HotelSettingsPage';
+import AmenitiesPage from './pages/rooms/AmenitiesPage';
+import RoomTypesPage from './pages/rooms/RoomTypesPage';
+import RoomsPage from './pages/rooms/RoomsPage';
+import AvailabilityMatrixPage from './pages/rooms/AvailabilityMatrixPage';
+import GuestListPage from './pages/guests/GuestListPage';
+
 // Create a client
 const queryClient = new QueryClient();
 
@@ -28,13 +37,22 @@ function App() {
               {/* Protected Routes inside AppShell */}
               <Route element={<AppShell />}>
                 <Route path="/" element={<Dashboard />} />
+                
+                {/* Bookings & Payments (Phase 4/5) */}
                 <Route path="/bookings" element={<Placeholder title="Bookings" />} />
-                <Route path="/rooms" element={<Placeholder title="Rooms & Grid" />} />
-                <Route path="/guests" element={<Placeholder title="Guests" />} />
                 <Route path="/payments" element={<Placeholder title="Payments" />} />
-                <Route path="/hotels" element={<Placeholder title="Hotels" />} />
                 <Route path="/users" element={<Placeholder title="Staff & Users" />} />
-                <Route path="/settings" element={<Placeholder title="Settings" />} />
+                
+                {/* Phase 3 Master Data */}
+                <Route path="/hotels" element={<HotelListPage />} />
+                <Route path="/settings" element={<HotelSettingsPage />} />
+                <Route path="/guests" element={<GuestListPage />} />
+                
+                {/* Rooms Sub-Routing - for now placing them directly or under /rooms depending on sidebar setup */}
+                <Route path="/rooms" element={<RoomsPage />} />
+                <Route path="/room-types" element={<RoomTypesPage />} />
+                <Route path="/amenities" element={<AmenitiesPage />} />
+                <Route path="/availability" element={<AvailabilityMatrixPage />} />
               </Route>
 
               {/* Catch-all 404 */}
