@@ -14,6 +14,9 @@ import RoomTypesPage from './pages/rooms/RoomTypesPage';
 import RoomsPage from './pages/rooms/RoomsPage';
 import AvailabilityMatrixPage from './pages/rooms/AvailabilityMatrixPage';
 import GuestListPage from './pages/guests/GuestListPage';
+// Phase 4 Pages
+import BookingListPage from './pages/bookings/BookingListPage';
+import BookingDetailsPage from './pages/bookings/BookingDetailsPage';
 
 // Create a client
 const queryClient = new QueryClient();
@@ -39,7 +42,8 @@ function App() {
                 <Route path="/" element={<Dashboard />} />
                 
                 {/* Bookings & Payments (Phase 4/5) */}
-                <Route path="/bookings" element={<Placeholder title="Bookings" />} />
+                <Route path="/bookings" element={<BookingListPage />} />
+                <Route path="/bookings/:id" element={<BookingDetailsPage />} />
                 <Route path="/payments" element={<Placeholder title="Payments" />} />
                 <Route path="/users" element={<Placeholder title="Staff & Users" />} />
                 
