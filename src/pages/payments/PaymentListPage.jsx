@@ -11,11 +11,24 @@ import RecordPaymentModal from '../../components/payments/RecordPaymentModal';
 const PaymentListPage = () => {
   const { activeHotelId } = useHotel();
   const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(15);
+  const [statusFilter, setStatusFilter] = useState('');
+  const [methodFilter, setMethodFilter] = useState('');
+  const [selectedRows, setSelectedRows] = useState([]);
+  
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const { data, isLoading } = useQuery({
-    queryKey: ['payments', activeHotelId, page],
-    queryFn: () => paymentsApi.getPayments(activeHotelId, { page, perPage: 15, include: 'booking' }),
+    queryKey: ['payments', activeHotelId, page, perPage, statusFilter, methodFilter],
+    queryFn: () => paymentsApi.getPayments(activeHotelId, { 
+      page, 
+      perPage, 
+      include: 'booking',
+      filters: {
+        status: statusFilter || undefined,
+        payment_method: methodFilter || undefined
+      }
+    }),
     enabled: !!activeHotelId,
   });
 
@@ -50,9 +63,35 @@ const PaymentListPage = () => {
     return <div className="p-6 bg-white border border-zinc-200 rounded-xl">Please select an active hotel.</div>;
   }
 
+  const filterControls = (
+    <div className="flex gap-2 w-full sm:w-auto">
+      <select
+        value={statusFilter}
+        onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
+        className="block w-full py-2 px-3 border border-zinc-200 rounded-lg text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900"
+      >
+        <option value="">All Statuses</option>
+        <option value="completed">Completed</option>
+        <option value="pending">Pending</option>
+        <option value="failed">Failed</option>
+      </select>
+      <select
+        value={methodFilter}
+        onChange={(e) => { setMethodFilter(e.target.value); setPage(1); }}
+        className="block w-full py-2 px-3 border border-zinc-200 rounded-lg text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900"
+      >
+        <option value="">All Methods</option>
+        <option value="credit_card">Credit Card</option>
+        <option value="cash">Cash</option>
+        <option value="bank_transfer">Bank Transfer</option>
+        <option value="mobile_money">Mobile Money</option>
+      </select>
+    </div>
+  );
+
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="-mx-6 -mt-6 px-6 py-6 mb-6 bg-zinc-50 border-b border-zinc-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-zinc-900">Payments Ledger</h1>
           <p className="mt-1 text-sm text-zinc-500">View all financial transactions and receipts.</p>
@@ -67,6 +106,12 @@ const PaymentListPage = () => {
         columns={columns}
         data={data?.data || []}
         isLoading={isLoading}
+        filters={filterControls}
+        perPage={perPage}
+        onPerPageChange={(val) => { setPerPage(val); setPage(1); }}
+        enableSelection={true}
+        selectedRowIds={selectedRows}
+        onSelectionChange={setSelectedRows}
         pagination={{
           current_page: data?.meta?.current_page,
           from: data?.meta?.from,

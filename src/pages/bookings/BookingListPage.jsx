@@ -13,12 +13,22 @@ const BookingListPage = () => {
   const { activeHotelId } = useHotel();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  
   const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(15);
+  const [statusFilter, setStatusFilter] = useState('');
+  const [selectedRows, setSelectedRows] = useState([]);
+  
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   const { data, isLoading } = useQuery({
-    queryKey: ['bookings', activeHotelId, page],
-    queryFn: () => bookingsApi.getBookings(activeHotelId, { page, perPage: 15, include: 'guest,room' }),
+    queryKey: ['bookings', activeHotelId, page, perPage, statusFilter],
+    queryFn: () => bookingsApi.getBookings(activeHotelId, { 
+      page, 
+      perPage, 
+      include: 'guest,room',
+      filters: statusFilter ? { status: statusFilter } : undefined
+    }),
     enabled: !!activeHotelId,
   });
 
@@ -89,9 +99,25 @@ const BookingListPage = () => {
     return <div className="p-6 bg-white border border-zinc-200 rounded-xl">Please select an active hotel.</div>;
   }
 
+  const statusDropdown = (
+    <select
+      value={statusFilter}
+      onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
+      className="block w-full py-2 px-3 border border-zinc-200 rounded-lg text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900"
+    >
+      <option value="">All Statuses</option>
+      <option value="pending">Pending</option>
+      <option value="confirmed">Confirmed</option>
+      <option value="checked_in">Checked In</option>
+      <option value="checked_out">Checked Out</option>
+      <option value="cancelled">Cancelled</option>
+      <option value="no_show">No Show</option>
+    </select>
+  );
+
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="-mx-6 -mt-6 px-6 py-6 mb-6 bg-zinc-50 border-b border-zinc-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-zinc-900">Reservations</h1>
           <p className="mt-1 text-sm text-zinc-500">Manage all past, current, and upcoming bookings.</p>
@@ -106,6 +132,12 @@ const BookingListPage = () => {
         columns={columns}
         data={data?.data || []}
         isLoading={isLoading}
+        filters={statusDropdown}
+        perPage={perPage}
+        onPerPageChange={(val) => { setPerPage(val); setPage(1); }}
+        enableSelection={true}
+        selectedRowIds={selectedRows}
+        onSelectionChange={setSelectedRows}
         pagination={{
           current_page: data?.meta?.current_page,
           from: data?.meta?.from,

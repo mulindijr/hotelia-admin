@@ -11,6 +11,10 @@ import ConfirmModal from '../../components/common/ConfirmModal';
 const HotelListPage = () => {
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(15);
+  const [search, setSearch] = useState('');
+  const [selectedRows, setSelectedRows] = useState([]);
+  
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [editingHotel, setEditingHotel] = useState(null);
   
@@ -18,8 +22,12 @@ const HotelListPage = () => {
   const [hotelToDelete, setHotelToDelete] = useState(null);
 
   const { data, isLoading } = useQuery({
-    queryKey: ['hotels', page],
-    queryFn: () => hotelsApi.getHotels({ page, perPage: 15 }),
+    queryKey: ['hotels', page, perPage, search],
+    queryFn: () => hotelsApi.getHotels({ 
+      page, 
+      perPage, 
+      filters: search ? { name: search } : undefined 
+    }),
   });
 
   const deleteMutation = useMutation({
@@ -96,21 +104,31 @@ const HotelListPage = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="-mx-6 -mt-6 px-6 py-6 mb-6 bg-zinc-50 border-b border-zinc-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-zinc-900">Hotels & Properties</h1>
           <p className="mt-1 text-sm text-zinc-500">Manage all registered hotel properties in the system.</p>
         </div>
-        <Button onClick={() => { setEditingHotel(null); setIsFormModalOpen(true); }}>
-          <Plus className="w-4 h-4 mr-2" />
-          Add Hotel
-        </Button>
+        <div className="flex items-center gap-3">
+          <Button onClick={() => { setEditingHotel(null); setIsFormModalOpen(true); }}>
+            <Plus className="w-4 h-4 mr-2" />
+            Add Hotel
+          </Button>
+        </div>
       </div>
 
       <DataTable 
         columns={columns}
         data={data?.data || []}
         isLoading={isLoading}
+        searchPlaceholder="Search hotels by name..."
+        searchValue={search}
+        onSearchChange={(val) => { setSearch(val); setPage(1); }}
+        perPage={perPage}
+        onPerPageChange={(val) => { setPerPage(val); setPage(1); }}
+        enableSelection={true}
+        selectedRowIds={selectedRows}
+        onSelectionChange={setSelectedRows}
         pagination={{
           current_page: data?.meta?.current_page,
           from: data?.meta?.from,

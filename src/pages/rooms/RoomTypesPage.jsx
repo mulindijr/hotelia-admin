@@ -25,14 +25,22 @@ const RoomTypesPage = () => {
   const { activeHotelId } = useHotel();
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(15);
+  const [search, setSearch] = useState('');
+  const [selectedRows, setSelectedRows] = useState([]);
+  
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
 
   const { data, isLoading } = useQuery({
-    queryKey: ['roomTypes', activeHotelId, page],
-    queryFn: () => roomsApi.getRoomTypes(activeHotelId, { page, perPage: 15 }),
+    queryKey: ['roomTypes', activeHotelId, page, perPage, search],
+    queryFn: () => roomsApi.getRoomTypes(activeHotelId, { 
+      page, 
+      perPage,
+      filters: search ? { name: search } : undefined
+    }),
     enabled: !!activeHotelId,
   });
 
@@ -105,18 +113,29 @@ const RoomTypesPage = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="-mx-6 -mt-6 px-6 py-6 mb-6 bg-zinc-50 border-b border-zinc-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-zinc-900">Room Types</h1>
           <p className="mt-1 text-sm text-zinc-500">Manage categories and base pricing.</p>
         </div>
-        <Button onClick={() => openForm(null)}><Plus className="w-4 h-4 mr-2" /> Add Room Type</Button>
+        <Button onClick={() => openForm(null)}>
+          <Plus className="w-4 h-4 mr-2" /> 
+          Add Room Type
+        </Button>
       </div>
 
       <DataTable 
         columns={columns}
         data={data?.data || []}
         isLoading={isLoading}
+        searchPlaceholder="Search room types..."
+        searchValue={search}
+        onSearchChange={(val) => { setSearch(val); setPage(1); }}
+        perPage={perPage}
+        onPerPageChange={(val) => { setPerPage(val); setPage(1); }}
+        enableSelection={true}
+        selectedRowIds={selectedRows}
+        onSelectionChange={setSelectedRows}
         pagination={{
           current_page: data?.meta?.current_page,
           from: data?.meta?.from,

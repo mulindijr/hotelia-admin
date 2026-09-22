@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Plus, Edit2, Trash2 } from 'lucide-react';
 import { roomsApi } from '../../api/rooms';
+import { useHotel } from '../../context/HotelContext';
 import DataTable from '../../components/common/DataTable';
 import Button from '../../components/common/Button';
 import Modal from '../../components/common/Modal';
@@ -17,17 +18,26 @@ const amenitySchema = z.object({
 });
 
 const AmenitiesPage = () => {
+  const { activeHotelId } = useHotel();
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(15);
+  const [search, setSearch] = useState('');
+  const [selectedRows, setSelectedRows] = useState([]);
+
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
-  
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
 
   const { data, isLoading } = useQuery({
-    queryKey: ['amenities', page],
-    queryFn: () => roomsApi.getAmenities({ page, perPage: 15 }),
+    queryKey: ['amenities', activeHotelId, page, perPage, search],
+    queryFn: () => roomsApi.getAmenities(activeHotelId, { 
+      page, 
+      perPage,
+      filters: search ? { name: search } : undefined
+    }),
+    enabled: !!activeHotelId,
   });
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm({
@@ -45,23 +55,24 @@ const AmenitiesPage = () => {
   };
 
   const saveMutation = useMutation({
-    mutationFn: (formData) => editingItem ? roomsApi.updateAmenity(editingItem.id, formData) : roomsApi.createAmenity(formData),
+    mutationFn: (formData) => editingItem 
+      ? roomsApi.updateAmenity(activeHotelId, editingItem.id, formData) 
+      : roomsApi.createAmenity(activeHotelId, formData),
     onSuccess: () => {
-      queryClient.invalidateQueries(['amenities']);
+      queryClient.invalidateQueries(['amenities', activeHotelId]);
       setIsFormOpen(false);
     }
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id) => roomsApi.deleteAmenity(id),
+    mutationFn: (id) => roomsApi.deleteAmenity(activeHotelId, id),
     onSuccess: () => {
-      queryClient.invalidateQueries(['amenities']);
+      queryClient.invalidateQueries(['amenities', activeHotelId]);
       setIsDeleteOpen(false);
     }
   });
 
   const columns = [
-    { header: 'ID', accessor: 'id', className: 'w-16' },
     { header: 'Name', accessor: 'name', className: 'font-medium' },
     { header: 'Description', accessor: 'description' },
     {
@@ -70,16 +81,10 @@ const AmenitiesPage = () => {
       cellClassName: 'text-right',
       render: (row) => (
         <div className="flex items-center justify-end gap-2">
-          <button 
-            onClick={() => openForm(row)}
-            className="p-1.5 text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 rounded-md transition-colors"
-          >
+          <button onClick={() => openForm(row)} className="p-1.5 text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 rounded-md">
             <Edit2 className="w-4 h-4" />
           </button>
-          <button 
-            onClick={() => { setItemToDelete(row); setIsDeleteOpen(true); }}
-            className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-md transition-colors"
-          >
+          <button onClick={() => { setItemToDelete(row); setIsDeleteOpen(true); }} className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-md">
             <Trash2 className="w-4 h-4" />
           </button>
         </div>
@@ -87,23 +92,32 @@ const AmenitiesPage = () => {
     }
   ];
 
+  if (!activeHotelId) {
+    return <div className="p-6 bg-white border border-zinc-200 rounded-xl">Please select an active hotel.</div>;
+  }
+
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="-mx-6 -mt-6 px-6 py-6 mb-6 bg-zinc-50 border-b border-zinc-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-zinc-900">Amenities</h1>
-          <p className="mt-1 text-sm text-zinc-500">Manage global amenities available across properties.</p>
+          <p className="mt-1 text-sm text-zinc-500">Manage property and room amenities.</p>
         </div>
-        <Button onClick={() => openForm(null)}>
-          <Plus className="w-4 h-4 mr-2" />
-          Add Amenity
-        </Button>
+        <Button onClick={() => openForm(null)}><Plus className="w-4 h-4 mr-2" /> Add Amenity</Button>
       </div>
 
       <DataTable 
         columns={columns}
         data={data?.data || []}
         isLoading={isLoading}
+        searchPlaceholder="Search amenities..."
+        searchValue={search}
+        onSearchChange={(val) => { setSearch(val); setPage(1); }}
+        perPage={perPage}
+        onPerPageChange={(val) => { setPerPage(val); setPage(1); }}
+        enableSelection={true}
+        selectedRowIds={selectedRows}
+        onSelectionChange={setSelectedRows}
         pagination={{
           current_page: data?.meta?.current_page,
           from: data?.meta?.from,
@@ -111,7 +125,7 @@ const AmenitiesPage = () => {
           total: data?.meta?.total,
           prev_page_url: data?.links?.prev,
           next_page_url: data?.links?.next,
-          onPageChange: (newPage) => setPage(newPage)
+          onPageChange: setPage
         }}
       />
 

@@ -32,14 +32,27 @@ const RoomsPage = () => {
   const { activeHotelId } = useHotel();
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(15);
+  const [statusFilter, setStatusFilter] = useState('');
+  const [roomTypeFilter, setRoomTypeFilter] = useState('');
+  const [selectedRows, setSelectedRows] = useState([]);
+  
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
 
   const { data, isLoading } = useQuery({
-    queryKey: ['rooms', activeHotelId, page],
-    queryFn: () => roomsApi.getRooms(activeHotelId, { page, perPage: 15, include: 'roomType' }),
+    queryKey: ['rooms', activeHotelId, page, perPage, statusFilter, roomTypeFilter],
+    queryFn: () => roomsApi.getRooms(activeHotelId, { 
+      page, 
+      perPage, 
+      include: 'roomType',
+      filters: {
+        status: statusFilter || undefined,
+        room_type_id: roomTypeFilter || undefined
+      }
+    }),
     enabled: !!activeHotelId,
   });
 
@@ -124,20 +137,55 @@ const RoomsPage = () => {
 
   const roomTypeOptions = roomTypesData?.data?.map(rt => ({ label: rt.name, value: rt.id })) || [];
 
+  const filterControls = (
+    <div className="flex gap-2 w-full sm:w-auto">
+      <select
+        value={statusFilter}
+        onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
+        className="block w-full py-2 px-3 border border-zinc-200 rounded-lg text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900"
+      >
+        <option value="">All Statuses</option>
+        <option value="available">Available</option>
+        <option value="occupied">Occupied</option>
+        <option value="cleaning">Cleaning</option>
+        <option value="maintenance">Maintenance</option>
+      </select>
+      <select
+        value={roomTypeFilter}
+        onChange={(e) => { setRoomTypeFilter(e.target.value); setPage(1); }}
+        className="block w-full py-2 px-3 border border-zinc-200 rounded-lg text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900"
+      >
+        <option value="">All Types</option>
+        {roomTypeOptions.map(opt => (
+          <option key={opt.value} value={opt.value}>{opt.label}</option>
+        ))}
+      </select>
+    </div>
+  );
+
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="-mx-6 -mt-6 px-6 py-6 mb-6 bg-zinc-50 border-b border-zinc-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-zinc-900">Rooms</h1>
           <p className="mt-1 text-sm text-zinc-500">Manage individual physical rooms.</p>
         </div>
-        <Button onClick={() => openForm(null)}><Plus className="w-4 h-4 mr-2" /> Add Room</Button>
+        <Button onClick={() => openForm(null)}>
+          <Plus className="w-4 h-4 mr-2" /> 
+          Add Room
+        </Button>
       </div>
 
       <DataTable 
         columns={columns}
         data={data?.data || []}
         isLoading={isLoading}
+        filters={filterControls}
+        perPage={perPage}
+        onPerPageChange={(val) => { setPerPage(val); setPage(1); }}
+        enableSelection={true}
+        selectedRowIds={selectedRows}
+        onSelectionChange={setSelectedRows}
         pagination={{
           current_page: data?.meta?.current_page,
           from: data?.meta?.from,
