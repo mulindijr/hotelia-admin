@@ -14,15 +14,20 @@ import RoomTypesPage from './pages/rooms/RoomTypesPage';
 import RoomsPage from './pages/rooms/RoomsPage';
 import AvailabilityMatrixPage from './pages/rooms/AvailabilityMatrixPage';
 import GuestListPage from './pages/guests/GuestListPage';
+
 // Phase 4 Pages
 import BookingListPage from './pages/bookings/BookingListPage';
 import BookingDetailsPage from './pages/bookings/BookingDetailsPage';
+
+// Phase 5 Pages
+import DashboardPage from './pages/dashboard/DashboardPage';
+import PaymentListPage from './pages/payments/PaymentListPage';
+import UserListPage from './pages/users/UserListPage';
 
 // Create a client
 const queryClient = new QueryClient();
 
 // Placeholder components for routes
-const Dashboard = () => <div className="p-6"><h1 className="text-2xl font-bold text-zinc-900">Dashboard</h1><p className="mt-4 text-zinc-600">Welcome to Hotelia Admin.</p></div>;
 const Placeholder = ({ title }) => <div className="p-6"><h1 className="text-2xl font-bold text-zinc-900">{title}</h1></div>;
 
 function App() {
@@ -39,20 +44,20 @@ function App() {
 
               {/* Protected Routes inside AppShell */}
               <Route element={<AppShell />}>
-                <Route path="/" element={<Dashboard />} />
+                <Route path="/" element={<DashboardPage />} />
                 
                 {/* Bookings & Payments (Phase 4/5) */}
                 <Route path="/bookings" element={<BookingListPage />} />
                 <Route path="/bookings/:id" element={<BookingDetailsPage />} />
-                <Route path="/payments" element={<Placeholder title="Payments" />} />
-                <Route path="/users" element={<Placeholder title="Staff & Users" />} />
+                <Route path="/payments" element={<PaymentListPage />} />
+                <Route path="/users" element={<UserListPage />} />
                 
                 {/* Phase 3 Master Data */}
                 <Route path="/hotels" element={<HotelListPage />} />
                 <Route path="/settings" element={<HotelSettingsPage />} />
                 <Route path="/guests" element={<GuestListPage />} />
                 
-                {/* Rooms Sub-Routing - for now placing them directly or under /rooms depending on sidebar setup */}
+                {/* Rooms Sub-Routing */}
                 <Route path="/rooms" element={<RoomsPage />} />
                 <Route path="/room-types" element={<RoomTypesPage />} />
                 <Route path="/amenities" element={<AmenitiesPage />} />
