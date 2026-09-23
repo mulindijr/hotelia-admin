@@ -27,6 +27,10 @@ import UserListPage from './pages/users/UserListPage';
 // Phase 6 Pages
 import ReportsPage from './pages/reports/ReportsPage';
 
+// Phase 7 Pages
+import HousekeepingPage from './pages/operations/HousekeepingPage';
+import MaintenancePage from './pages/operations/MaintenancePage';
+
 // Create a client
 const queryClient = new QueryClient();
 
@@ -51,6 +55,10 @@ function App() {
                 
                 {/* Phase 6 Analytics */}
                 <Route path="/reports" element={<ReportsPage />} />
+
+                {/* Phase 7 Operations */}
+                <Route path="/housekeeping" element={<HousekeepingPage />} />
+                <Route path="/maintenance" element={<MaintenancePage />} />
                 
                 {/* Bookings & Payments (Phase 4/5) */}
                 <Route path="/bookings" element={<BookingListPage />} />

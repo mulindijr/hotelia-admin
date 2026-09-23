@@ -10,13 +10,17 @@ import {
   Settings,
   ShieldCheck,
   Hotel,
-  TrendingUp
+  TrendingUp,
+  Sparkles,
+  Wrench
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 const navItems = [
   { name: 'Dashboard', path: '/', icon: LayoutDashboard, permission: 'view reports' },
   { name: 'Reports', path: '/reports', icon: TrendingUp, permission: 'view reports' },
+  { name: 'Housekeeping', path: '/housekeeping', icon: Sparkles, permission: 'view housekeeping' },
+  { name: 'Maintenance', path: '/maintenance', icon: Wrench, permission: 'view maintenance' },
   { name: 'Bookings', path: '/bookings', icon: CalendarCheck, permission: 'view bookings' },
   { name: 'Rooms & Grid', path: '/rooms', icon: Bed, permission: 'view rooms' },
   { name: 'Guests', path: '/guests', icon: Users, permission: 'view guests' },
