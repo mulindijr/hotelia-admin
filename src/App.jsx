@@ -31,6 +31,9 @@ import ReportsPage from './pages/reports/ReportsPage';
 import HousekeepingPage from './pages/operations/HousekeepingPage';
 import MaintenancePage from './pages/operations/MaintenancePage';
 
+// Phase 8 Pages
+import AuditLogsPage from './pages/admin/AuditLogsPage';
+
 // Create a client
 const queryClient = new QueryClient();
 
@@ -59,6 +62,9 @@ function App() {
                 {/* Phase 7 Operations */}
                 <Route path="/housekeeping" element={<HousekeepingPage />} />
                 <Route path="/maintenance" element={<MaintenancePage />} />
+
+                {/* Phase 8 Admin */}
+                <Route path="/audit-logs" element={<AuditLogsPage />} />
                 
                 {/* Bookings & Payments (Phase 4/5) */}
                 <Route path="/bookings" element={<BookingListPage />} />

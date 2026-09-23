@@ -19,6 +19,7 @@ import { useAuth } from '../../context/AuthContext';
 const navItems = [
   { name: 'Dashboard', path: '/', icon: LayoutDashboard, permission: 'view reports' },
   { name: 'Reports', path: '/reports', icon: TrendingUp, permission: 'view reports' },
+  { name: 'Audit Logs', path: '/audit-logs', icon: ShieldCheck, permission: 'view activity logs' },
   { name: 'Housekeeping', path: '/housekeeping', icon: Sparkles, permission: 'view housekeeping' },
   { name: 'Maintenance', path: '/maintenance', icon: Wrench, permission: 'view maintenance' },
   { name: 'Bookings', path: '/bookings', icon: CalendarCheck, permission: 'view bookings' },
@@ -35,10 +36,8 @@ const Sidebar = ({ isOpen, setOpen }) => {
 
   // Filter links based on user permissions
   const filteredNavItems = navItems.filter(item => {
-    // If no permission array is provided or user has permission
-    // For demo purposes, we'll allow all if user has super_admin role
-    // Ideally we check hasPermission(item.permission)
-    return true; // We'll bypass strict permission check in UI skeleton for now until fully wired
+    if (!item.permission) return true;
+    return hasPermission(item.permission);
   });
 
   return (
