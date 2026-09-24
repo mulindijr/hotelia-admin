@@ -15,22 +15,35 @@ export const AuthProvider = ({ children }) => {
       const token = localStorage.getItem('hotelia_token');
       if (token) {
         try {
-          // The status endpoint checks token validity. Some apps return user info here.
-          // For now, if we have a token, we might need to load user from local storage
-          // or from a /me endpoint if it exists. 
-          // The login endpoint returns user and permissions. We should store them.
-          const storedUser = localStorage.getItem('hotelia_user');
-          const storedPerms = localStorage.getItem('hotelia_permissions');
-          if (storedUser && storedPerms) {
-            setUser(JSON.parse(storedUser));
-            setPermissions(JSON.parse(storedPerms));
+          // Fetch fresh user data from API to ensure roles/permissions are up to date
+          const response = await authApi.me();
+          if (response.data?.user) {
+            const userData = response.data.user;
+            setUser(userData);
+            // Permissions might come separately or within user object depending on backend
+            // In our AuthController, /me returns user with loaded roles and permissions. 
+            // We should use the roles/permissions from the fresh user object.
+            const userPerms = userData.permissions?.map(p => p.name) || [];
+            setPermissions(userPerms);
+            
+            // Update local storage so it stays fresh
+            localStorage.setItem('hotelia_user', JSON.stringify(userData));
+            localStorage.setItem('hotelia_permissions', JSON.stringify(userPerms));
           } else {
-            // Token exists but no user info, we might want to log out
             logout();
           }
         } catch (error) {
           console.error('Failed to initialize auth', error);
-          logout();
+          // Only logout if it's an auth error (401), not a network error
+          if (error.response?.status === 401) {
+            logout();
+          } else {
+            // Fallback to local storage if API is temporarily down
+            const storedUser = localStorage.getItem('hotelia_user');
+            const storedPerms = localStorage.getItem('hotelia_permissions');
+            if (storedUser) setUser(JSON.parse(storedUser));
+            if (storedPerms) setPermissions(JSON.parse(storedPerms));
+          }
         }
       }
       setIsLoading(false);
@@ -66,7 +79,7 @@ export const AuthProvider = ({ children }) => {
 
   const hasPermission = (permission) => {
     // Super admins bypass permission checks
-    if (user?.roles?.some(role => role === 'super_admin' || role.name === 'super_admin')) {
+    if (user?.is_super_admin || user?.roles?.some(role => role === 'super_admin' || role.name === 'super_admin')) {
       return true;
     }
     return permissions.includes(permission);

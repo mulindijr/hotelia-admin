@@ -15,4 +15,9 @@ export const authApi = {
     const response = await api.get('/auth/status'); // The doc says status, let's use it for getMe/auth check
     return response.data;
   },
+  
+  me: async () => {
+    const response = await api.get('/auth/me');
+    return response;
+  }
 };
