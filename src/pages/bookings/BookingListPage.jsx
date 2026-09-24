@@ -4,6 +4,7 @@ import { Plus, Eye, Download } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { bookingsApi } from '../../api/bookings';
 import { useHotel } from '../../context/HotelContext';
+import { useCurrency } from '../../hooks/useCurrency';
 import DataTable from '../../components/common/DataTable';
 import Button from '../../components/common/Button';
 import CreateBookingModal from '../../components/bookings/CreateBookingModal';
@@ -11,6 +12,7 @@ import BookingStatusBadge from '../../components/bookings/BookingStatusBadge';
 
 const BookingListPage = () => {
   const { activeHotelId } = useHotel();
+  const { formatCurrency } = useCurrency();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   
@@ -63,7 +65,7 @@ const BookingListPage = () => {
     },
     { 
       header: 'Total Price', 
-      render: (row) => `$${Number(row.total_price).toFixed(2)}` 
+      render: (row) => formatCurrency(row.total_amount)
     },
     { 
       header: 'Status', 

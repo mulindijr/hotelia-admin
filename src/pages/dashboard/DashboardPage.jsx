@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Users, BedDouble, CalendarCheck, DollarSign } from 'lucide-react';
 import { reportsApi } from '../../api/reports';
 import { useHotel } from '../../context/HotelContext';
+import { useCurrency } from '../../hooks/useCurrency';
 import Card from '../../components/common/Card';
 import {
   LineChart,
@@ -19,6 +20,7 @@ import { format, subDays } from 'date-fns';
 
 const DashboardPage = () => {
   const { activeHotelId } = useHotel();
+  const { currencyCode, formatCurrency } = useCurrency();
   
   // Default to last 30 days for dashboard view
   const [dateRange] = useState({
@@ -57,7 +59,7 @@ const DashboardPage = () => {
     { label: 'Check-Outs Today', value: stats.today_check_outs, icon: CalendarCheck, color: 'text-orange-600', bg: 'bg-orange-50' },
     { label: 'Occupancy Rate', value: `${stats.occupancy_rate}%`, icon: BedDouble, color: 'text-indigo-600', bg: 'bg-indigo-50' },
     { label: 'Available Rooms', value: stats.available_rooms, icon: Users, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-    { label: 'Revenue (MTD)', value: `$${Number(stats.revenue_mtd).toFixed(2)}`, icon: DollarSign, color: 'text-zinc-900', bg: 'bg-zinc-100' },
+    { label: 'Revenue (MTD)', value: formatCurrency(stats.revenue_mtd), icon: DollarSign, color: 'text-zinc-900', bg: 'bg-zinc-100' },
   ];
 
   // Prepare chart data (fallback to empty arrays if undefined)
@@ -134,10 +136,10 @@ const DashboardPage = () => {
                 <LineChart data={revenueChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e4e4e7" />
                   <XAxis dataKey="date" tick={{fontSize: 12, fill: '#71717a'}} axisLine={false} tickLine={false} minTickGap={30} />
-                  <YAxis tick={{fontSize: 12, fill: '#71717a'}} axisLine={false} tickLine={false} tickFormatter={(val) => `$${val}`} />
+                  <YAxis tick={{fontSize: 12, fill: '#71717a'}} axisLine={false} tickLine={false} tickFormatter={(val) => `${currencyCode} ${val}`} />
                   <Tooltip 
                     contentStyle={{ borderRadius: '8px', border: '1px solid #e4e4e7', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                    formatter={(value) => [`$${value}`, 'Revenue']}
+                    formatter={(value) => [`${currencyCode} ${value}`, 'Revenue']}
                     labelStyle={{ color: '#71717a', marginBottom: '4px' }}
                   />
                   <Line type="monotone" dataKey="amount" stroke="#18181b" strokeWidth={3} dot={false} activeDot={{ r: 6, fill: '#18181b' }} />

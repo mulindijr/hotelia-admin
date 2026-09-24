@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Edit2, Ban, Download } from 'lucide-react';
 import { useHotel } from '../../context/HotelContext';
+import { useCurrency } from '../../hooks/useCurrency';
 import { bookingsApi } from '../../api/bookings';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
@@ -13,6 +14,7 @@ const BookingDetailsPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { activeHotelId } = useHotel();
+  const { formatCurrency } = useCurrency();
   const queryClient = useQueryClient();
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
 
@@ -132,8 +134,8 @@ const BookingDetailsPage = () => {
               <p className="text-sm font-medium text-zinc-900">{new Date(booking.check_out_date).toLocaleDateString()}</p>
             </div>
             <div>
-              <p className="text-xs text-zinc-500">Room</p>
-              <p className="text-sm text-zinc-900">{booking.room?.room_number || `ID: ${booking.room_id}`}</p>
+              <p className="text-xs text-zinc-500">Room(s)</p>
+              <p className="text-sm text-zinc-900">{booking.rooms?.length > 0 ? booking.rooms.map(r => r.room_number).join(', ') : 'Not Assigned'}</p>
             </div>
             <div>
               <p className="text-xs text-zinc-500">Occupancy</p>
@@ -150,7 +152,7 @@ const BookingDetailsPage = () => {
       <Card title="Financial Summary">
         <div className="flex justify-between items-center py-3 border-b border-zinc-100">
           <span className="text-sm text-zinc-600">Total Price</span>
-          <span className="text-lg font-bold text-zinc-900">${Number(booking.total_price).toFixed(2)}</span>
+          <span className="text-lg font-bold text-zinc-900">{formatCurrency(booking.total_amount)}</span>
         </div>
       </Card>
 

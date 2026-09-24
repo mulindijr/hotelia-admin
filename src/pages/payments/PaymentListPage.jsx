@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Plus } from 'lucide-react';
 import { paymentsApi } from '../../api/payments';
 import { useHotel } from '../../context/HotelContext';
+import { useCurrency } from '../../hooks/useCurrency';
 import DataTable from '../../components/common/DataTable';
 import Button from '../../components/common/Button';
 import Badge from '../../components/common/Badge';
@@ -10,6 +11,7 @@ import RecordPaymentModal from '../../components/payments/RecordPaymentModal';
 
 const PaymentListPage = () => {
   const { activeHotelId } = useHotel();
+  const { formatCurrency } = useCurrency();
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(15);
   const [statusFilter, setStatusFilter] = useState('');
@@ -43,7 +45,7 @@ const PaymentListPage = () => {
     },
     { 
       header: 'Amount', 
-      render: (row) => `$${Number(row.amount).toFixed(2)}` 
+      render: (row) => formatCurrency(row.amount)
     },
     { 
       header: 'Method', 

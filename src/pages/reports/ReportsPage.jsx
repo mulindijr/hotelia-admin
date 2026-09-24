@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Download, Calendar as CalendarIcon } from 'lucide-react';
 import { reportsApi } from '../../api/reports';
 import { useHotel } from '../../context/HotelContext';
+import { useCurrency } from '../../hooks/useCurrency';
 import DataTable from '../../components/common/DataTable';
 import Button from '../../components/common/Button';
 import Card from '../../components/common/Card';
@@ -10,6 +11,7 @@ import { format, subDays } from 'date-fns';
 
 const ReportsPage = () => {
   const { activeHotelId } = useHotel();
+  const { formatCurrency } = useCurrency();
   
   const [startDate, setStartDate] = useState(format(subDays(new Date(), 30), 'yyyy-MM-dd'));
   const [endDate, setEndDate] = useState(format(new Date(), 'yyyy-MM-dd'));
@@ -39,7 +41,7 @@ const ReportsPage = () => {
 
   const revenueColumns = [
     { header: 'Date', render: (row) => new Date(row.date).toLocaleDateString() },
-    { header: 'Revenue Amount', render: (row) => `$${Number(row.amount).toFixed(2)}` }
+    { header: 'Revenue Amount', render: (row) => formatCurrency(row.amount) }
   ];
 
   const occupancyColumns = [

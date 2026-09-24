@@ -6,6 +6,7 @@ import * as z from 'zod';
 import { Plus, Edit2, Trash2 } from 'lucide-react';
 import { roomsApi } from '../../api/rooms';
 import { useHotel } from '../../context/HotelContext';
+import { useCurrency } from '../../hooks/useCurrency';
 import DataTable from '../../components/common/DataTable';
 import Button from '../../components/common/Button';
 import Modal from '../../components/common/Modal';
@@ -23,6 +24,7 @@ const roomTypeSchema = z.object({
 
 const RoomTypesPage = () => {
   const { activeHotelId } = useHotel();
+  const { formatCurrency } = useCurrency();
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(15);
@@ -88,7 +90,7 @@ const RoomTypesPage = () => {
     { header: 'Beds', accessor: 'beds' },
     { 
       header: 'Base Price', 
-      render: (row) => `$${Number(row.base_price).toFixed(2)}` 
+      render: (row) => formatCurrency(row.base_price)
     },
     {
       header: 'Actions',
