@@ -19,8 +19,9 @@ import Modal from '../../components/common/Modal';
 import ConfirmModal from '../../components/common/ConfirmModal';
 
 const RolesPage = () => {
-  const { hasPermission } = useAuth();
+  const { user, hasPermission } = useAuth();
   const { activeHotelId } = useHotel();
+  const isSuperAdmin = user?.roles?.some(role => role === 'super_admin' || role.name === 'super_admin');
   
   const [roles, setRoles] = useState([]);
   const [permissions, setPermissions] = useState([]);
@@ -33,6 +34,7 @@ const RolesPage = () => {
   
   const [formData, setFormData] = useState({
     name: '',
+    is_global: false,
     permissions: []
   });
 
@@ -67,11 +69,13 @@ const RolesPage = () => {
     if (role) {
       setFormData({
         name: role.name,
+        is_global: role.hotel_id === null,
         permissions: role.permissions?.map(p => p.name) || []
       });
     } else {
       setFormData({
         name: '',
+        is_global: false,
         permissions: []
       });
     }
@@ -160,6 +164,9 @@ const RolesPage = () => {
           </div>
           <span className="font-medium text-zinc-900 capitalize">
             {role.name.replace(/_/g, ' ')}
+            {role.hotel_id === null && (
+              <Badge variant="secondary" className="ml-2 text-xs">Global</Badge>
+            )}
           </span>
         </div>
       ),
@@ -262,6 +269,21 @@ const RolesPage = () => {
             placeholder="e.g. Front Desk Agent"
             required
           />
+
+          {isSuperAdmin && (
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="is_global"
+                checked={formData.is_global}
+                onChange={(e) => setFormData({ ...formData, is_global: e.target.checked })}
+                className="rounded border-zinc-300 text-indigo-600 focus:ring-indigo-600"
+              />
+              <label htmlFor="is_global" className="text-sm font-medium text-zinc-700">
+                Global Role (Applies to all hotels)
+              </label>
+            </div>
+          )}
 
           <div className="space-y-3">
             <div className="flex items-center justify-between">

@@ -20,7 +20,7 @@ const Header = ({ onMenuToggle }) => {
         
         {/* Hotel Selector */}
         {hotels.length > 0 && (
-          <div className="hidden sm:flex items-center">
+          <div className="flex items-center ml-2 sm:ml-0">
             <select
               value={activeHotelId || ''}
               onChange={(e) => changeHotel(parseInt(e.target.value))}
