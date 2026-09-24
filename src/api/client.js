@@ -13,6 +13,12 @@ api.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+  
+  const hotelId = localStorage.getItem('active_hotel_id');
+  if (hotelId) {
+    config.headers['X-Hotel-ID'] = hotelId;
+  }
+  
   return config;
 });
 
