@@ -65,6 +65,10 @@ export const AuthProvider = ({ children }) => {
   };
 
   const hasPermission = (permission) => {
+    // Super admins bypass permission checks
+    if (user?.roles?.some(role => role === 'super_admin' || role.name === 'super_admin')) {
+      return true;
+    }
     return permissions.includes(permission);
   };
 
