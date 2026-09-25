@@ -21,8 +21,8 @@ export const usersApi = {
     return response.data;
   },
 
-  getRoles: async (hotelId) => {
-    const response = await api.get(`/hotels/${hotelId}/roles`);
+  getRoles: async () => {
+    const response = await api.get('/admin/roles');
     return response.data;
   }
 };

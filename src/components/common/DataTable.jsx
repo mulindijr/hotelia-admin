@@ -175,7 +175,7 @@ const DataTable = ({
                     )}
                     {columns.map((col, colIndex) => (
                       <td key={colIndex} className={`px-6 py-4 whitespace-nowrap ${col.cellClassName || ''}`}>
-                        {col.accessor ? row[col.accessor] : col.render ? col.render(row) : null}
+                        {col.render ? col.render(row) : col.accessor ? row[col.accessor] : null}
                       </td>
                     ))}
                   </tr>

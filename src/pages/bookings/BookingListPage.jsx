@@ -28,7 +28,7 @@ const BookingListPage = () => {
     queryFn: () => bookingsApi.getBookings(activeHotelId, { 
       page, 
       perPage, 
-      include: 'guest,room',
+      include: 'guest,rooms',
       filters: statusFilter ? { status: statusFilter } : undefined
     }),
     enabled: !!activeHotelId,
