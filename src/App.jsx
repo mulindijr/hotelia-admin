@@ -5,6 +5,7 @@ import { AuthProvider } from './context/AuthContext';
 import { HotelProvider } from './context/HotelContext';
 import AppShell from './components/layout/AppShell';
 import LoginPage from './pages/auth/LoginPage';
+import RegisterPage from './pages/auth/RegisterPage';
 
 // Phase 3 Pages
 import HotelListPage from './pages/hotels/HotelListPage';
@@ -50,6 +51,7 @@ function App() {
             <Routes>
               {/* Public Routes */}
               <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
               <Route path="/forgot-password" element={<Placeholder title="Forgot Password" />} />
               <Route path="/reset-password" element={<Placeholder title="Reset Password" />} />
 

@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Hotel, KeyRound } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import Input from '../../components/common/Input';
 import Button from '../../components/common/Button';
 import AccountLockoutBanner from '../../components/auth/AccountLockoutBanner';
@@ -114,6 +115,15 @@ const LoginPage = () => {
               </Button>
             </form>
           )}
+
+          <div className="mt-6 text-center">
+            <p className="text-sm text-zinc-600">
+              Don't have a workspace?{' '}
+              <Link to="/register" className="font-medium text-zinc-900 hover:underline">
+                Create one
+              </Link>
+            </p>
+          </div>
         </div>
       </div>
     </div>
