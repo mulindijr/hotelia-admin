@@ -8,6 +8,7 @@ import DataTable from '../../components/common/DataTable';
 import Button from '../../components/common/Button';
 import Badge from '../../components/common/Badge';
 import RecordPaymentModal from '../../components/payments/RecordPaymentModal';
+import EmptyState from '../../components/common/EmptyState';
 
 const PaymentListPage = () => {
   const { activeHotelId } = useHotel();
@@ -62,7 +63,7 @@ const PaymentListPage = () => {
   ];
 
   if (!activeHotelId) {
-    return <div className="p-6 bg-white border border-zinc-200 rounded-xl">Please select an active hotel.</div>;
+    return <EmptyState />;
   }
 
   const filterControls = (

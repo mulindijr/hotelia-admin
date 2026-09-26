@@ -12,6 +12,7 @@ import Button from '../../components/common/Button';
 import Modal from '../../components/common/Modal';
 import Input from '../../components/common/Input';
 import ConfirmModal from '../../components/common/ConfirmModal';
+import EmptyState from '../../components/common/EmptyState';
 
 const roomTypeSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -110,7 +111,7 @@ const RoomTypesPage = () => {
   ];
 
   if (!activeHotelId) {
-    return <div className="p-6 bg-white border border-zinc-200 rounded-xl">Please select an active hotel.</div>;
+    return <EmptyState />;
   }
 
   return (

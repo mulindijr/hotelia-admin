@@ -8,6 +8,7 @@ import DataTable from '../../components/common/DataTable';
 import Button from '../../components/common/Button';
 import Card from '../../components/common/Card';
 import { format, subDays } from 'date-fns';
+import EmptyState from '../../components/common/EmptyState';
 
 const ReportsPage = () => {
   const { activeHotelId } = useHotel();
@@ -32,7 +33,7 @@ const ReportsPage = () => {
   });
 
   if (!activeHotelId) {
-    return <div className="p-6 bg-white border border-zinc-200 rounded-xl">Please select an active hotel to view reports.</div>;
+    return <EmptyState />;
   }
 
   // Raw data mapping

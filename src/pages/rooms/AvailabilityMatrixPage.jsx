@@ -4,6 +4,7 @@ import { Calendar as CalendarIcon } from 'lucide-react';
 import { roomsApi } from '../../api/rooms';
 import { useHotel } from '../../context/HotelContext';
 import Card from '../../components/common/Card';
+import EmptyState from '../../components/common/EmptyState';
 
 const AvailabilityMatrixPage = () => {
   const { activeHotelId } = useHotel();
@@ -24,7 +25,7 @@ const AvailabilityMatrixPage = () => {
   });
 
   if (!activeHotelId) {
-    return <div className="p-6 bg-white border border-zinc-200 rounded-xl">Please select an active hotel.</div>;
+    return <EmptyState />;
   }
 
   return (

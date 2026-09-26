@@ -8,6 +8,7 @@ import Button from '../../components/common/Button';
 import Badge from '../../components/common/Badge';
 import ConfirmModal from '../../components/common/ConfirmModal';
 import UserFormModal from '../../components/users/UserFormModal';
+import EmptyState from '../../components/common/EmptyState';
 
 const UserListPage = () => {
   const { activeHotelId } = useHotel();
@@ -91,7 +92,7 @@ const UserListPage = () => {
   ];
 
   if (!activeHotelId) {
-    return <div className="p-6 bg-white border border-zinc-200 rounded-xl">Please select an active hotel.</div>;
+    return <EmptyState />;
   }
 
   const roleOptions = rolesData?.data?.map(r => ({ label: r.name, value: r.id })) || [];

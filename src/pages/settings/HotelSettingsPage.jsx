@@ -9,6 +9,7 @@ import { hotelsApi } from '../../api/hotels';
 import Card from '../../components/common/Card';
 import Input from '../../components/common/Input';
 import Button from '../../components/common/Button';
+import EmptyState from '../../components/common/EmptyState';
 
 const settingsSchema = z.object({
   currency: z.string().min(1, 'Currency code is required'),

@@ -9,6 +9,7 @@ import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import BookingStatusBadge from '../../components/bookings/BookingStatusBadge';
 import ConfirmModal from '../../components/common/ConfirmModal';
+import EmptyState from '../../components/common/EmptyState';
 
 const BookingDetailsPage = () => {
   const { id } = useParams();
@@ -53,7 +54,7 @@ const BookingDetailsPage = () => {
   });
 
   if (!activeHotelId) {
-    return <div className="p-6">Please select an active hotel.</div>;
+    return <EmptyState />;
   }
 
   if (isLoading) {

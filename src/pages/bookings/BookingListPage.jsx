@@ -9,6 +9,7 @@ import DataTable from '../../components/common/DataTable';
 import Button from '../../components/common/Button';
 import CreateBookingModal from '../../components/bookings/CreateBookingModal';
 import BookingStatusBadge from '../../components/bookings/BookingStatusBadge';
+import EmptyState from '../../components/common/EmptyState';
 
 const BookingListPage = () => {
   const { activeHotelId } = useHotel();
@@ -98,7 +99,7 @@ const BookingListPage = () => {
   ];
 
   if (!activeHotelId) {
-    return <div className="p-6 bg-white border border-zinc-200 rounded-xl">Please select an active hotel.</div>;
+    return <EmptyState />;
   }
 
   const statusDropdown = (

@@ -8,6 +8,7 @@ import Button from '../../components/common/Button';
 import Badge from '../../components/common/Badge';
 import ConfirmModal from '../../components/common/ConfirmModal';
 import HousekeepingFormModal from './HousekeepingFormModal';
+import EmptyState from '../../components/common/EmptyState';
 
 const HousekeepingPage = () => {
   const { activeHotelId } = useHotel();
@@ -84,7 +85,7 @@ const HousekeepingPage = () => {
   ];
 
   if (!activeHotelId) {
-    return <div className="p-6 bg-white border border-zinc-200 rounded-xl">Please select an active hotel.</div>;
+    return <EmptyState />;
   }
 
   const filterControls = (
