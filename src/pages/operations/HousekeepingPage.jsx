@@ -52,7 +52,7 @@ const HousekeepingPage = () => {
     },
     { 
       header: 'Assigned To', 
-      render: (row) => row.assigned_to ? `${row.assigned_to.first_name} ${row.assigned_to.last_name}` : <span className="text-zinc-400 italic">Unassigned</span> 
+      render: (row) => row.assigned_user ? `${row.assigned_user.first_name} ${row.assigned_user.last_name}` : <span className="text-zinc-400 italic">Unassigned</span> 
     },
     { 
       header: 'Status', 
