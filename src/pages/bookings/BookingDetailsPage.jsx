@@ -71,7 +71,7 @@ const BookingDetailsPage = () => {
     <div className="space-y-6 max-w-5xl">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <button onClick={() => navigate('/bookings')} className="p-2 text-zinc-500 hover:text-zinc-900 bg-white border border-zinc-200 rounded-lg">
+          <button onClick={() => navigate('/bookings')} className="cursor-pointer p-2 text-zinc-500 hover:text-zinc-900 bg-white border border-zinc-200 rounded-lg">
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div>

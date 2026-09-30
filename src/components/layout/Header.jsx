@@ -37,7 +37,7 @@ const Header = ({ onMenuToggle }) => {
       </div>
 
       <div className="flex items-center gap-4">
-        <button className="text-zinc-500 hover:text-zinc-900 relative p-1 rounded-full focus:outline-none focus:ring-2 focus:ring-zinc-900">
+        <button className="cursor-pointer text-zinc-500 hover:text-zinc-900 relative p-1 rounded-full focus:outline-none focus:ring-2 focus:ring-zinc-900">
           <Bell className="w-5 h-5" />
           <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-500 ring-2 ring-white"></span>
         </button>

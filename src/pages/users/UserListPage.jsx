@@ -80,10 +80,10 @@ const UserListPage = () => {
       cellClassName: 'text-right',
       render: (row) => (
         <div className="flex items-center justify-end gap-2">
-          <button onClick={() => openForm(row)} className="p-1.5 text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 rounded-md">
+          <button onClick={() => openForm(row)} className="cursor-pointer p-1.5 text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 rounded-md">
             <Edit2 className="w-4 h-4" />
           </button>
-          <button onClick={() => { setUserToDelete(row); setIsDeleteOpen(true); }} className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-md">
+          <button onClick={() => { setUserToDelete(row); setIsDeleteOpen(true); }} className="cursor-pointer p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-md">
             <Trash2 className="w-4 h-4" />
           </button>
         </div>
