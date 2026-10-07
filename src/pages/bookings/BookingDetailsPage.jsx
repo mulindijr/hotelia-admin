@@ -86,22 +86,22 @@ const BookingDetailsPage = () => {
 
         <div className="flex items-center gap-2">
           {booking.status === 'pending' && (
-            <Button variant="secondary" onClick={() => updateStatusMutation.mutate('confirmed')} isLoading={updateStatusMutation.isPending}>
+            <Button variant="secondary" onClick={() => updateStatusMutation.mutate('confirmed')} isLoading={updateStatusMutation.isPending && updateStatusMutation.variables === 'confirmed'} disabled={updateStatusMutation.isPending}>
               Confirm
             </Button>
           )}
           {(booking.status === 'confirmed' || booking.status === 'pending') && (
-            <Button variant="secondary" onClick={() => updateStatusMutation.mutate('checked_in')} isLoading={updateStatusMutation.isPending}>
+            <Button variant="secondary" onClick={() => updateStatusMutation.mutate('checked_in')} isLoading={updateStatusMutation.isPending && updateStatusMutation.variables === 'checked_in'} disabled={updateStatusMutation.isPending}>
               Check In
             </Button>
           )}
           {booking.status === 'checked_in' && (
-            <Button variant="secondary" onClick={() => updateStatusMutation.mutate('checked_out')} isLoading={updateStatusMutation.isPending}>
+            <Button variant="secondary" onClick={() => updateStatusMutation.mutate('checked_out')} isLoading={updateStatusMutation.isPending && updateStatusMutation.variables === 'checked_out'} disabled={updateStatusMutation.isPending}>
               Check Out
             </Button>
           )}
           {(booking.status === 'pending' || booking.status === 'confirmed') && (
-            <Button variant="destructive" onClick={() => setIsCancelModalOpen(true)}>
+            <Button variant="destructive" onClick={() => setIsCancelModalOpen(true)} disabled={updateStatusMutation.isPending}>
               Cancel
             </Button>
           )}
