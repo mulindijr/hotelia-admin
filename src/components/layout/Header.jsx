@@ -2,11 +2,13 @@ import React from 'react';
 import { Menu, Bell, User, LogOut } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useHotel } from '../../context/HotelContext';
+import ProfileSettingsModal from \'../users/ProfileSettingsModal\';
 
 const Header = ({ onMenuToggle }) => {
   const { user, logout } = useAuth();
   const { hotels, activeHotelId, changeHotel } = useHotel();
   const [profileOpen, setProfileOpen] = React.useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = React.useState(false);
 
   return (
     <header className="bg-white border-b border-zinc-200 h-16 flex items-center justify-between px-4 sm:px-6 z-10 w-full">
@@ -59,7 +61,14 @@ const Header = ({ onMenuToggle }) => {
                 <p className="text-sm font-medium text-zinc-900">{user?.full_name}</p>
                 <p className="text-xs text-zinc-500 truncate">{user?.email}</p>
               </div>
-              <button 
+                            <button 
+                onClick={() => { setProfileOpen(false); setIsProfileModalOpen(true); }}
+                className="w-full text-left px-4 py-2 text-sm text-zinc-700 hover:bg-zinc-50 flex items-center gap-2"
+              >
+                <User className="w-4 h-4" />
+                Account Settings
+              </button>
+<button 
                 onClick={logout}
                 className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-zinc-50 flex items-center gap-2"
               >
@@ -71,6 +80,7 @@ const Header = ({ onMenuToggle }) => {
         </div>
       </div>
     </header>
+      <ProfileSettingsModal isOpen={isProfileModalOpen} onClose={() => setIsProfileModalOpen(false)} />
   );
 };
 

@@ -12,21 +12,21 @@ export const hotelsApi = {
     return response.data;
   },
   
-  createHotel: async (formData) => {
-    // Note: Use FormData for logo upload
-    const response = await api.post('/hotels', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
-    });
+  createHotel: async (data) => {
+    const response = await api.post('/hotels', data);
     return response.data;
   },
   
-  updateHotel: async (id, formData) => {
-    // Note: Laravel handles PUT with FormData if _method is set, or Axios handles it
-    // Usually FormData with PUT in Laravel requires POST with _method=PUT
-    formData.append('_method', 'PUT');
-    const response = await api.post(`/hotels/${id}`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
-    });
+  updateHotel: async (id, data) => {
+    // If FormData is passed (e.g. for file upload), Laravel requires POST with _method=PUT
+    if (typeof FormData !== 'undefined' && data instanceof FormData) {
+      if (!data.has('_method')) {
+        data.append('_method', 'PUT');
+      }
+      const response = await api.post(`/hotels/${id}`, data);
+      return response.data;
+    }
+    const response = await api.put(`/hotels/${id}`, data);
     return response.data;
   },
   

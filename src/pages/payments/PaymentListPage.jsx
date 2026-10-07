@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Plus } from 'lucide-react';
+import { Plus , Download } from 'lucide-react';
 import { paymentsApi } from '../../api/payments';
+import { downloadBlob } from \'../../api/client\';
 import { useHotel } from '../../context/HotelContext';
 import { useCurrency } from '../../hooks/useCurrency';
 import DataTable from '../../components/common/DataTable';
@@ -35,7 +36,14 @@ const PaymentListPage = () => {
     enabled: !!activeHotelId,
   });
 
-  const columns = [
+  
+  const downloadReceiptMutation = useMutation({
+    mutationFn: (id) => paymentsApi.downloadReceipt(activeHotelId, id),
+    onSuccess: (blob, id) => {
+      downloadBlob(blob, `receipt-${id}.pdf`);
+    }
+  });
+const columns = [
     { 
       header: 'Booking Ref', 
       render: (row) => <span className="font-medium text-zinc-900">{row.booking?.booking_reference || `ID: ${row.booking_id}`}</span> 

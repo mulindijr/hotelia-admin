@@ -6,6 +6,8 @@ import { HotelProvider } from './context/HotelContext';
 import AppShell from './components/layout/AppShell';
 import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
+import ForgotPasswordPage from \'./pages/auth/ForgotPasswordPage\';
+import ResetPasswordPage from \'./pages/auth/ResetPasswordPage\';
 
 // Phase 3 Pages
 import HotelListPage from './pages/hotels/HotelListPage';
@@ -52,8 +54,8 @@ function App() {
               {/* Public Routes */}
               <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
-              <Route path="/forgot-password" element={<Placeholder title="Forgot Password" />} />
-              <Route path="/reset-password" element={<Placeholder title="Reset Password" />} />
+              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+              <Route path="/reset-password" element={<ResetPasswordPage />} />
 
               {/* Protected Routes inside AppShell */}
               <Route element={<AppShell />}>

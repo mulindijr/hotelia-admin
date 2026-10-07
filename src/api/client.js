@@ -19,6 +19,11 @@ api.interceptors.request.use((config) => {
     config.headers['X-Hotel-ID'] = hotelId;
   }
   
+  // If data is FormData, let browser/Axios set boundary Content-Type
+  if (typeof FormData !== 'undefined' && config.data instanceof FormData) {
+    delete config.headers['Content-Type'];
+  }
+  
   return config;
 });
 
@@ -71,3 +76,17 @@ export const buildUrl = (endpoint, options = {}) => {
 };
 
 export default api;
+
+/**
+ * Helper to download a blob response as a file
+ */
+export const downloadBlob = (blob, filename) => {
+  const url = window.URL.createObjectURL(new Blob([blob]));
+  const link = document.createElement('a');
+  link.href = url;
+  link.setAttribute('download', filename);
+  document.body.appendChild(link);
+  link.click();
+  link.parentNode.removeChild(link);
+  window.URL.revokeObjectURL(url);
+};

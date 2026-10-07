@@ -20,6 +20,12 @@ export const bookingsApi = {
     const response = await api.patch(`/hotels/${hotelId}/bookings/${id}/status`, { status });
     return response.data;
   },
+  downloadInvoice: async (hotelId, id) => {
+    const response = await api.get(`/hotels/${hotelId}/bookings/${id}/invoice/download`, {
+      responseType: 'blob'
+    });
+    return response.data;
+  },
 
   cancelBooking: async (hotelId, id) => {
     const response = await api.post(`/hotels/${hotelId}/bookings/${id}/cancel`);

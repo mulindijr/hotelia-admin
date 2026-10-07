@@ -8,10 +8,21 @@ import Modal from '../common/Modal';
 import Input from '../common/Input';
 import Button from '../common/Button';
 
+export const slugify = (text) =>
+  text
+    ? text
+        .toString()
+        .toLowerCase()
+        .trim()
+        .replace(/[\s\W-]+/g, '-')
+        .replace(/^-+|-+$/g, '')
+    : '';
+
 const hotelSchema = z.object({
-  name: z.string().min(1, 'Name is required'),
-  email: z.string().email('Invalid email'),
-  phone: z.string().min(1, 'Phone is required'),
+  name: z.string().min(1, 'Hotel name is required'),
+  slug: z.string().min(1, 'Slug is required'),
+  email: z.string().email('Invalid email address').or(z.literal('')).optional(),
+  phone: z.string().optional(),
   country: z.string().min(1, 'Country is required'),
   city: z.string().min(1, 'City is required'),
   address: z.string().min(1, 'Address is required'),
@@ -22,7 +33,14 @@ const HotelFormModal = ({ isOpen, onClose, hotel }) => {
   const queryClient = useQueryClient();
   const isEditing = !!hotel;
 
-  const { register, handleSubmit, reset, formState: { errors } } = useForm({
+  const { 
+    register, 
+    handleSubmit, 
+    reset, 
+    setValue,
+    setError,
+    formState: { errors } 
+  } = useForm({
     resolver: zodResolver(hotelSchema),
   });
 
@@ -31,6 +49,7 @@ const HotelFormModal = ({ isOpen, onClose, hotel }) => {
       if (hotel) {
         reset({
           name: hotel.name || '',
+          slug: hotel.slug || slugify(hotel.name || ''),
           email: hotel.email || '',
           phone: hotel.phone || '',
           country: hotel.country || '',
@@ -39,31 +58,52 @@ const HotelFormModal = ({ isOpen, onClose, hotel }) => {
           description: hotel.description || '',
         });
       } else {
-        reset({ name: '', email: '', phone: '', country: '', city: '', address: '', description: '' });
+        reset({ 
+          name: '', 
+          slug: '',
+          email: '', 
+          phone: '', 
+          country: '', 
+          city: '', 
+          address: '', 
+          description: '' 
+        });
       }
     }
   }, [isOpen, hotel, reset]);
 
   const mutation = useMutation({
     mutationFn: (data) => {
-      const formData = new FormData();
-      Object.keys(data).forEach(key => {
-        if (data[key] !== undefined && data[key] !== null) {
-          formData.append(key, data[key]);
-        }
-      });
-      // Optionally handle logo upload if we had a file input
-      // const fileInput = document.querySelector('#logo');
-      // if (fileInput?.files?.[0]) formData.append('logo', fileInput.files[0]);
+      const payload = {
+        name: data.name,
+        slug: data.slug || slugify(data.name),
+        country: data.country,
+        city: data.city,
+        address: data.address,
+        ...(data.email ? { email: data.email } : {}),
+        ...(data.phone ? { phone: data.phone } : {}),
+        ...(data.description ? { description: data.description } : {}),
+      };
 
       if (isEditing) {
-        return hotelsApi.updateHotel(hotel.id, formData);
+        return hotelsApi.updateHotel(hotel.id, payload);
       }
-      return hotelsApi.createHotel(formData);
+      return hotelsApi.createHotel(payload);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['hotels']);
+      queryClient.invalidateQueries({ queryKey: ['hotels'] });
       onClose();
+    },
+    onError: (error) => {
+      if (error.response?.status === 422 && error.response?.data?.errors) {
+        const serverErrors = error.response.data.errors;
+        Object.entries(serverErrors).forEach(([field, messages]) => {
+          setError(field, {
+            type: 'server',
+            message: Array.isArray(messages) ? messages[0] : messages,
+          });
+        });
+      }
     }
   });
 
@@ -90,19 +130,45 @@ const HotelFormModal = ({ isOpen, onClose, hotel }) => {
       }
     >
       <form id="hotel-form" className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
+        {mutation.isError && !Object.keys(errors).length && (
+          <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+            {mutation.error?.response?.data?.message || 'Failed to save hotel. Please check the details and try again.'}
+          </div>
+        )}
+
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Input label="Hotel Name" {...register('name')} error={errors.name?.message} />
-          <Input label="Email Address" type="email" {...register('email')} error={errors.email?.message} />
-        </div>
-        
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Input label="Phone Number" {...register('phone')} error={errors.phone?.message} />
-          <Input label="Country" {...register('country')} error={errors.country?.message} />
+          <Input 
+            label="Hotel Name" 
+            placeholder="e.g. Grand Hotelia Resort"
+            {...register('name', {
+              onChange: (e) => {
+                if (!isEditing) {
+                  setValue('slug', slugify(e.target.value), { shouldValidate: true });
+                }
+              }
+            })} 
+            error={errors.name?.message} 
+          />
+          <Input 
+            label="Identifier Slug" 
+            placeholder="e.g. grand-hotelia-resort"
+            {...register('slug')} 
+            error={errors.slug?.message} 
+          />
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Input label="City" {...register('city')} error={errors.city?.message} />
-          <Input label="Address" {...register('address')} error={errors.address?.message} />
+          <Input label="Email Address" type="email" placeholder="info@hotel.com" {...register('email')} error={errors.email?.message} />
+          <Input label="Phone Number" placeholder="+254 700 000000" {...register('phone')} error={errors.phone?.message} />
+        </div>
+        
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Input label="Country" placeholder="Kenya" {...register('country')} error={errors.country?.message} />
+          <Input label="City" placeholder="Nairobi" {...register('city')} error={errors.city?.message} />
+        </div>
+
+        <div>
+          <Input label="Address" placeholder="e.g. 123 Safari Way" {...register('address')} error={errors.address?.message} />
         </div>
 
         <div>

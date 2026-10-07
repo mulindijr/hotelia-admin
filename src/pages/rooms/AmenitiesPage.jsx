@@ -12,6 +12,7 @@ import Modal from '../../components/common/Modal';
 import Input from '../../components/common/Input';
 import ConfirmModal from '../../components/common/ConfirmModal';
 import EmptyState from '../../components/common/EmptyState';
+import RoomsNavigation from \'../../components/rooms/RoomsNavigation\';
 
 const amenitySchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -104,6 +105,7 @@ const AmenitiesPage = () => {
           <h1 className="text-2xl font-bold text-zinc-900">Amenities</h1>
           <p className="mt-1 text-sm text-zinc-500">Manage property and room amenities.</p>
         </div>
+      <RoomsNavigation />
         <Button onClick={() => openForm(null)}><Plus className="w-4 h-4 mr-2" /> Add Amenity</Button>
       </div>
 

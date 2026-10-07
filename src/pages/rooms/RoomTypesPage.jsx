@@ -13,6 +13,7 @@ import Modal from '../../components/common/Modal';
 import Input from '../../components/common/Input';
 import ConfirmModal from '../../components/common/ConfirmModal';
 import EmptyState from '../../components/common/EmptyState';
+import RoomsNavigation from \'../../components/rooms/RoomsNavigation\';
 
 const roomTypeSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -121,6 +122,7 @@ const RoomTypesPage = () => {
           <h1 className="text-2xl font-bold text-zinc-900">Room Types</h1>
           <p className="mt-1 text-sm text-zinc-500">Manage categories and base pricing.</p>
         </div>
+      <RoomsNavigation />
         <Button onClick={() => openForm(null)}>
           <Plus className="w-4 h-4 mr-2" /> 
           Add Room Type
