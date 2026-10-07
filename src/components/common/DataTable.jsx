@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Search, ChevronDown, ChevronUp } from 'lucide-react';
+import { Search, ChevronDown, ChevronUp, ChevronsUpDown } from 'lucide-react';
 
 const DataTable = ({ 
+  sortConfig, 
+  onSort, 
+
   columns, 
   data, 
   isLoading, 
@@ -135,8 +138,23 @@ const DataTable = ({
                 </th>
               )}
               {columns.map((col, idx) => (
-                <th key={idx} className={`px-6 py-3 whitespace-nowrap ${col.className || ''}`}>
-                  {col.header}
+                <th 
+                  key={idx} 
+                  className={`px-6 py-3 whitespace-nowrap ${col.className || ''} ${col.sortable ? 'cursor-pointer hover:bg-zinc-100 transition-colors select-none' : ''}`}
+                  onClick={() => { if (col.sortable && onSort) onSort(col.accessor || col.sortField) }}
+                >
+                  <div className="flex items-center gap-1">
+                    {col.header}
+                    {col.sortable && (
+                      <span className="ml-1 text-zinc-400">
+                        {sortConfig?.field === (col.accessor || col.sortField) ? (
+                          sortConfig.direction === 'asc' ? <ChevronUp className="w-4 h-4 text-zinc-900" /> : <ChevronDown className="w-4 h-4 text-zinc-900" />
+                        ) : (
+                          <ChevronsUpDown className="w-4 h-4 opacity-30" />
+                        )}
+                      </span>
+                    )}
+                  </div>
                 </th>
               ))}
             </tr>

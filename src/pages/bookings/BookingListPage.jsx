@@ -21,17 +21,28 @@ const BookingListPage = () => {
   const [perPage, setPerPage] = useState(15);
   const [statusFilter, setStatusFilter] = useState('');
   const [selectedRows, setSelectedRows] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortConfig, setSortConfig] = useState({ field: 'created_at', direction: 'desc' });
   
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   const { data, isLoading } = useQuery({
-    queryKey: ['bookings', activeHotelId, page, perPage, statusFilter],
-    queryFn: () => bookingsApi.getBookings(activeHotelId, { 
-      page, 
-      perPage, 
-      include: 'guest,rooms',
-      filters: statusFilter ? { status: statusFilter } : undefined
-    }),
+    queryKey: ['bookings', activeHotelId, page, perPage, statusFilter, searchQuery, sortConfig],
+    queryFn: () => {
+      const filters = {};
+      if (statusFilter) filters.status = statusFilter;
+      if (searchQuery) filters.search = searchQuery;
+      
+      const sort = sortConfig.direction === 'desc' ? `-${sortConfig.field}` : sortConfig.field;
+      
+      return bookingsApi.getBookings(activeHotelId, { 
+        page, 
+        perPage, 
+        include: 'guest,rooms',
+        filters: Object.keys(filters).length ? filters : undefined,
+        sort
+      });
+    },
     enabled: !!activeHotelId,
   });
 
@@ -51,7 +62,9 @@ const BookingListPage = () => {
 
   const columns = [
     { 
-      header: 'Ref #', 
+      header: 'Ref #',
+      sortable: true,
+      accessor: 'booking_reference',
       render: (row) => (
         <button 
           onClick={() => navigate(`/bookings/${row.id}`)}
@@ -66,7 +79,9 @@ const BookingListPage = () => {
       render: (row) => row.guest ? `${row.guest.first_name} ${row.guest.last_name}` : 'Unknown'
     },
     { 
-      header: 'Dates', 
+      header: 'Dates',
+      sortable: true,
+      sortField: 'check_in_date',
       render: (row) => (
         <div className="text-sm">
           <div>In: {new Date(row.check_in_date).toLocaleDateString()}</div>
@@ -75,11 +90,15 @@ const BookingListPage = () => {
       )
     },
     { 
-      header: 'Total Price', 
+      header: 'Total Price',
+      sortable: true,
+      sortField: 'total_amount',
       render: (row) => formatCurrency(row.total_amount)
     },
     { 
-      header: 'Status', 
+      header: 'Status',
+      sortable: true,
+      accessor: 'status',
       render: (row) => <BookingStatusBadge status={row.status} />
     },
     {
@@ -145,6 +164,16 @@ const BookingListPage = () => {
         columns={columns}
         data={data?.data || []}
         isLoading={isLoading}
+        searchValue={searchQuery}
+        onSearchChange={(val) => { setSearchQuery(val); setPage(1); }}
+        sortConfig={sortConfig}
+        onSort={(field) => {
+          setSortConfig(prev => ({
+            field,
+            direction: prev.field === field && prev.direction === 'asc' ? 'desc' : 'asc'
+          }));
+          setPage(1);
+        }}
         filters={statusDropdown}
         perPage={perPage}
         onPerPageChange={(val) => { setPerPage(val); setPage(1); }}
