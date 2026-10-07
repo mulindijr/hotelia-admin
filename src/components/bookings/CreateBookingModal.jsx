@@ -19,7 +19,7 @@ const wizardSchema = z.object({
   guest: z.object({
     first_name: z.string().optional(),
     last_name: z.string().optional(),
-    email: z.string().email('Invalid email').optional().or(z.literal('')),
+    email: z.string().email('Valid email is required'),
     phone: z.string().optional(),
   }).optional(),
   room_id: z.coerce.number().min(1, 'Please select a room'),
@@ -128,6 +128,10 @@ const CreateBookingModal = ({ isOpen, onClose }) => {
           setError('guest.last_name', { type: 'manual', message: 'Last name is required' });
           isValid = false;
         }
+        if (!vals.guest?.email || !/^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/.test(vals.guest.email)) {
+          setError('guest.email', { type: 'manual', message: 'Valid email is required' });
+          isValid = false;
+        }
       }
     } else if (step === 2) {
       isValid = await trigger(['room_id', 'check_in_date', 'check_out_date', 'adults', 'children']);
@@ -232,7 +236,7 @@ const CreateBookingModal = ({ isOpen, onClose }) => {
                   <Input label="Last Name *" {...register('guest.last_name')} error={errors.guest?.last_name?.message} />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
-                  <Input type="email" label="Email Address" {...register('guest.email')} error={errors.guest?.email?.message} />
+                  <Input type="email" label="Email Address *" {...register('guest.email')} error={errors.guest?.email?.message} />
                   <Input label="Phone Number" {...register('guest.phone')} error={errors.guest?.phone?.message} />
                 </div>
               </div>
