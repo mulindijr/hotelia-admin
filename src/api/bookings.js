@@ -6,8 +6,8 @@ export const bookingsApi = {
     return response.data;
   },
 
-  getBooking: async (hotelId, id) => {
-    const response = await api.get(`/hotels/${hotelId}/bookings/${id}`);
+  getBooking: async (hotelId, id, options = {}) => {
+    const response = await api.get(buildUrl(`/hotels/${hotelId}/bookings/${id}`, options));
     return response.data;
   },
 

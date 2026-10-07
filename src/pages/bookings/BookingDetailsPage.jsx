@@ -22,7 +22,7 @@ const BookingDetailsPage = () => {
 
   const { data, isLoading } = useQuery({
     queryKey: ['booking', activeHotelId, id],
-    queryFn: () => bookingsApi.getBooking(activeHotelId, id),
+    queryFn: () => bookingsApi.getBooking(activeHotelId, id, { include: 'guest,rooms,payments,services' }),
     enabled: !!activeHotelId && !!id,
   });
 
@@ -157,9 +157,41 @@ const BookingDetailsPage = () => {
       </div>
 
       <Card title="Financial Summary">
-        <div className="flex justify-between items-center py-3 border-b border-zinc-100">
-          <span className="text-sm text-zinc-600">Total Price</span>
-          <span className="text-lg font-bold text-zinc-900">{formatCurrency(booking.total_amount)}</span>
+        <div className="flex flex-col gap-4">
+          <div className="flex justify-between items-center py-3 border-b border-zinc-100">
+            <span className="text-sm text-zinc-600">Total Price</span>
+            <span className="text-lg font-bold text-zinc-900">{formatCurrency(booking.total_amount)}</span>
+          </div>
+          
+          <div>
+            <h4 className="text-sm font-semibold text-zinc-900 mb-3">Payment History</h4>
+            {booking.payments && booking.payments.length > 0 ? (
+              <div className="overflow-hidden rounded-lg border border-zinc-200">
+                <table className="w-full text-left text-sm">
+                  <thead className="bg-zinc-50 border-b border-zinc-200 text-zinc-500">
+                    <tr>
+                      <th className="px-4 py-2 font-medium">Date</th>
+                      <th className="px-4 py-2 font-medium">Method</th>
+                      <th className="px-4 py-2 font-medium">Ref</th>
+                      <th className="px-4 py-2 font-medium text-right">Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-zinc-200 bg-white">
+                    {booking.payments.map((payment) => (
+                      <tr key={payment.id}>
+                        <td className="px-4 py-2 text-zinc-600">{new Date(payment.created_at).toLocaleString()}</td>
+                        <td className="px-4 py-2 text-zinc-900 capitalize">{payment.payment_method.replace('_', ' ')}</td>
+                        <td className="px-4 py-2 text-zinc-500">{payment.transaction_reference || '-'}</td>
+                        <td className="px-4 py-2 text-zinc-900 font-medium text-right">{formatCurrency(payment.amount)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p className="text-sm text-zinc-500 italic">No payments recorded yet.</p>
+            )}
+          </div>
         </div>
       </Card>
 
