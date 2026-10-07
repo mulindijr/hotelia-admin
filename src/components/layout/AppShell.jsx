@@ -3,12 +3,14 @@ import { Outlet, Navigate } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Header from './Header';
 import { useAuth } from '../../context/AuthContext';
+import { useHotel } from '../../context/HotelContext';
 
 const AppShell = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { user, isLoading } = useAuth();
+  const { user, isLoading: isLoadingAuth } = useAuth();
+  const { isLoading: isLoadingHotels } = useHotel();
 
-  if (isLoading) {
+  if (isLoadingAuth || isLoadingHotels) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-zinc-50">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-zinc-900"></div>

@@ -19,7 +19,7 @@ import {
 import { format, subDays } from 'date-fns';
 
 const DashboardPage = () => {
-  const { activeHotelId } = useHotel();
+  const { activeHotelId, isLoading: isLoadingHotels } = useHotel();
   const { currencyCode, formatCurrency } = useCurrency();
   
   // Default to last 30 days for dashboard view
@@ -39,8 +39,16 @@ const DashboardPage = () => {
     queryFn: () => reportsApi.getRevenueReport(activeHotelId, { filters: dateRange }),
     enabled: !!activeHotelId,
   });
+  if (isLoadingHotels) {
+    return (
+      <div className="h-64 flex items-center justify-center bg-transparent">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-zinc-900"></div>
+      </div>
+    );
+  }
 
   if (!activeHotelId) {
+
     return (
       <div className="p-12 bg-white border border-zinc-200 rounded-xl flex flex-col items-center justify-center text-center space-y-4 shadow-sm">
         <div className="w-16 h-16 bg-zinc-100 rounded-full flex items-center justify-center mb-2">
