@@ -43,6 +43,32 @@ export const roomsApi = {
     return response.data;
   },
 
+  
+  // Room Type Images
+  getRoomTypeImages: async (hotelId, roomTypeId) => {
+    const response = await api.get(`/hotels/${hotelId}/room-types/${roomTypeId}/images`);
+    return response.data;
+  },
+
+  uploadRoomTypeImage: async (hotelId, roomTypeId, formData) => {
+    const response = await api.post(`/hotels/${hotelId}/room-types/${roomTypeId}/images`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+
+  setPrimaryRoomTypeImage: async (hotelId, roomTypeId, imageId) => {
+    const response = await api.post(`/hotels/${hotelId}/room-types/${roomTypeId}/images/${imageId}/primary`);
+    return response.data;
+  },
+
+  deleteRoomTypeImage: async (hotelId, roomTypeId, imageId) => {
+    const response = await api.delete(`/hotels/${hotelId}/room-types/${roomTypeId}/images/${imageId}`);
+    return response.data;
+  },
+
   // Individual Rooms
   getRooms: async (hotelId, options = {}) => {
     const response = await api.get(buildUrl(`/hotels/${hotelId}/rooms`, options));

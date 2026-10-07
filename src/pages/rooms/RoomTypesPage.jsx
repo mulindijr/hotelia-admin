@@ -14,6 +14,8 @@ import Input from '../../components/common/Input';
 import ConfirmModal from '../../components/common/ConfirmModal';
 import EmptyState from '../../components/common/EmptyState';
 import RoomsNavigation from '../../components/rooms/RoomsNavigation';
+import RoomTypeGalleryModal from '../../components/rooms/RoomTypeGalleryModal';
+import { Image as ImageIcon } from 'lucide-react';
 
 const roomTypeSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -36,6 +38,8 @@ const RoomTypesPage = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [isGalleryOpen, setIsGalleryOpen] = useState(false);
+  const [activeGalleryRoomType, setActiveGalleryRoomType] = useState(null);
   const [itemToDelete, setItemToDelete] = useState(null);
 
   const { data, isLoading } = useQuery({
@@ -100,8 +104,11 @@ const RoomTypesPage = () => {
       cellClassName: 'text-right',
       render: (row) => (
         <div className="flex items-center justify-end gap-2">
-          <button onClick={() => openForm(row)} className="cursor-pointer p-1.5 text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 rounded-md">
+          <button onClick={() => openForm(row)} className="cursor-pointer p-1.5 text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 rounded-md" title="Edit">
             <Edit2 className="w-4 h-4" />
+          </button>
+          <button onClick={() => { setActiveGalleryRoomType(row); setIsGalleryOpen(true); }} className="cursor-pointer p-1.5 text-zinc-500 hover:text-blue-600 hover:bg-blue-50 rounded-md" title="Gallery">
+            <ImageIcon className="w-4 h-4" />
           </button>
           <button onClick={() => { setItemToDelete(row); setIsDeleteOpen(true); }} className="cursor-pointer p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-md">
             <Trash2 className="w-4 h-4" />
@@ -184,6 +191,13 @@ const RoomTypesPage = () => {
         isDestructive={true}
         isLoading={deleteMutation.isPending}
       />
+      
+      <RoomTypeGalleryModal
+        isOpen={isGalleryOpen}
+        onClose={() => { setIsGalleryOpen(false); setActiveGalleryRoomType(null); }}
+        roomType={activeGalleryRoomType}
+      />
+
     </div>
   );
 };
