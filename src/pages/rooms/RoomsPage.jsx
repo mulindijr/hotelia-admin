@@ -105,7 +105,7 @@ const RoomsPage = () => {
     { header: 'Room #', accessor: 'room_number', className: 'font-medium' },
     { 
       header: 'Type', 
-      render: (row) => row.roomType?.name || `Type #${row.room_type_id}` 
+      render: (row) => row.room_type?.name || `Type #${row.room_type_id}` 
     },
     { header: 'Floor', accessor: 'floor' },
     { 
