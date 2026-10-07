@@ -50,7 +50,17 @@ const BookingListPage = () => {
   });
 
   const columns = [
-    { header: 'Ref #', accessor: 'booking_reference', className: 'font-medium text-zinc-900' },
+    { 
+      header: 'Ref #', 
+      render: (row) => (
+        <button 
+          onClick={() => navigate(`/bookings/${row.id}`)}
+          className="font-medium text-zinc-900 hover:text-indigo-600 hover:underline focus:outline-none"
+        >
+          {row.booking_reference}
+        </button>
+      )
+    },
     { 
       header: 'Guest', 
       render: (row) => row.guest ? `${row.guest.first_name} ${row.guest.last_name}` : 'Unknown'
