@@ -12,7 +12,7 @@ import Modal from '../../components/common/Modal';
 import Input from '../../components/common/Input';
 import ConfirmModal from '../../components/common/ConfirmModal';
 import EmptyState from '../../components/common/EmptyState';
-import RoomsNavigation from \'../../components/rooms/RoomsNavigation\';
+import RoomsNavigation from '../../components/rooms/RoomsNavigation';
 
 const amenitySchema = z.object({
   name: z.string().min(1, 'Name is required'),

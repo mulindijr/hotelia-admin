@@ -5,7 +5,7 @@ import { roomsApi } from '../../api/rooms';
 import { useHotel } from '../../context/HotelContext';
 import Card from '../../components/common/Card';
 import EmptyState from '../../components/common/EmptyState';
-import RoomsNavigation from \'../../components/rooms/RoomsNavigation\';
+import RoomsNavigation from '../../components/rooms/RoomsNavigation';
 
 const AvailabilityMatrixPage = () => {
   const { activeHotelId } = useHotel();

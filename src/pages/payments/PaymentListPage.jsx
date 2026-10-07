@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Plus , Download } from 'lucide-react';
 import { paymentsApi } from '../../api/payments';
-import { downloadBlob } from \'../../api/client\';
+import { downloadBlob } from '../../api/client';
 import { useHotel } from '../../context/HotelContext';
 import { useCurrency } from '../../hooks/useCurrency';
 import DataTable from '../../components/common/DataTable';

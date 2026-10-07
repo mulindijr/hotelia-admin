@@ -2,7 +2,7 @@ import React from 'react';
 import { Menu, Bell, User, LogOut } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useHotel } from '../../context/HotelContext';
-import ProfileSettingsModal from \'../users/ProfileSettingsModal\';
+import ProfileSettingsModal from '../users/ProfileSettingsModal';
 
 const Header = ({ onMenuToggle }) => {
   const { user, logout } = useAuth();
@@ -11,7 +11,8 @@ const Header = ({ onMenuToggle }) => {
   const [isProfileModalOpen, setIsProfileModalOpen] = React.useState(false);
 
   return (
-    <header className="bg-white border-b border-zinc-200 h-16 flex items-center justify-between px-4 sm:px-6 z-10 w-full">
+    <>
+      <header className="bg-white border-b border-zinc-200 h-16 flex items-center justify-between px-4 sm:px-6 z-10 w-full">
       <div className="flex items-center gap-4">
         <button 
           onClick={onMenuToggle}
@@ -81,6 +82,7 @@ const Header = ({ onMenuToggle }) => {
       </div>
     </header>
       <ProfileSettingsModal isOpen={isProfileModalOpen} onClose={() => setIsProfileModalOpen(false)} />
+    </>
   );
 };
 

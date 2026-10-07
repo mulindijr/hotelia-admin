@@ -6,8 +6,8 @@ import { HotelProvider } from './context/HotelContext';
 import AppShell from './components/layout/AppShell';
 import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
-import ForgotPasswordPage from \'./pages/auth/ForgotPasswordPage\';
-import ResetPasswordPage from \'./pages/auth/ResetPasswordPage\';
+import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
+import ResetPasswordPage from './pages/auth/ResetPasswordPage';
 
 // Phase 3 Pages
 import HotelListPage from './pages/hotels/HotelListPage';

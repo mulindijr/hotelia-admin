@@ -5,7 +5,7 @@ import { ArrowLeft, Edit2, Ban, Download } from 'lucide-react';
 import { useHotel } from '../../context/HotelContext';
 import { useCurrency } from '../../hooks/useCurrency';
 import { bookingsApi } from '../../api/bookings';
-import { downloadBlob } from \'../../api/client\';
+import { downloadBlob } from '../../api/client';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import BookingStatusBadge from '../../components/bookings/BookingStatusBadge';

@@ -23,7 +23,7 @@ export const authApi = {
   me: async () => {
     const response = await api.get('/auth/me');
     return response;
-  }
+  },
   forgotPassword: async (data) => {
     const response = await api.post('/auth/forgot-password', data);
     return response.data;

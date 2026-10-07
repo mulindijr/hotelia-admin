@@ -14,7 +14,7 @@ import Select from '../../components/common/Select';
 import ConfirmModal from '../../components/common/ConfirmModal';
 import Badge from '../../components/common/Badge';
 import EmptyState from '../../components/common/EmptyState';
-import RoomsNavigation from \'../../components/rooms/RoomsNavigation\';
+import RoomsNavigation from '../../components/rooms/RoomsNavigation';
 
 const roomSchema = z.object({
   room_number: z.string().min(1, 'Room number is required'),
