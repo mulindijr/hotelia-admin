@@ -17,7 +17,16 @@ export const bookingsApi = {
   },
 
   updateBookingStatus: async (hotelId, id, status) => {
-    const response = await api.patch(`/hotels/${hotelId}/bookings/${id}/status`, { status });
+    let response;
+    if (status === 'checked_in') {
+      response = await api.post(`/hotels/${hotelId}/bookings/${id}/check-in`);
+    } else if (status === 'checked_out') {
+      response = await api.post(`/hotels/${hotelId}/bookings/${id}/check-out`);
+    } else if (status === 'cancelled') {
+      response = await api.post(`/hotels/${hotelId}/bookings/${id}/cancel`);
+    } else {
+      response = await api.patch(`/hotels/${hotelId}/bookings/${id}`, { status });
+    }
     return response.data;
   },
   downloadInvoice: async (hotelId, id) => {

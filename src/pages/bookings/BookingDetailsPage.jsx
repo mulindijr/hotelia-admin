@@ -85,7 +85,12 @@ const BookingDetailsPage = () => {
         </div>
 
         <div className="flex items-center gap-2">
-          {booking.status === 'confirmed' && (
+          {booking.status === 'pending' && (
+            <Button variant="secondary" onClick={() => updateStatusMutation.mutate('confirmed')} isLoading={updateStatusMutation.isPending}>
+              Confirm
+            </Button>
+          )}
+          {(booking.status === 'confirmed' || booking.status === 'pending') && (
             <Button variant="secondary" onClick={() => updateStatusMutation.mutate('checked_in')} isLoading={updateStatusMutation.isPending}>
               Check In
             </Button>
@@ -97,7 +102,7 @@ const BookingDetailsPage = () => {
           )}
           {(booking.status === 'pending' || booking.status === 'confirmed') && (
             <Button variant="destructive" onClick={() => setIsCancelModalOpen(true)}>
-              Cancel Booking
+              Cancel
             </Button>
           )}
           <Button variant="secondary" onClick={() => downloadInvoiceMutation.mutate()} isLoading={downloadInvoiceMutation.isPending}>
