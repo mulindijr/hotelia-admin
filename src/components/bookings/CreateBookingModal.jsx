@@ -68,7 +68,7 @@ const CreateBookingModal = ({ isOpen, onClose }) => {
       adults: 1,
       children: 0,
       check_in_now: true,
-      initial_payment: { amount: 0, payment_method: 'credit_card' }
+      initial_payment: { amount: 0, payment_method: 'card' }
     }
   });
 
@@ -286,10 +286,10 @@ const CreateBookingModal = ({ isOpen, onClose }) => {
                       label="Payment Method"
                       {...register('initial_payment.payment_method')}
                       options={[
-                        { label: 'Credit Card', value: 'credit_card' },
+                        { label: 'Credit Card', value: 'card' },
                         { label: 'Cash', value: 'cash' },
                         { label: 'Bank Transfer', value: 'bank_transfer' },
-                        { label: 'Mobile Money', value: 'mobile_money' },
+                        { label: 'Mobile Money (M-Pesa)', value: 'mpesa' },
                       ]}
                     />
                   </div>
