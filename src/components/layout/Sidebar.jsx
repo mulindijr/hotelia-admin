@@ -1,7 +1,8 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { 
-  LayoutDashboard, 
+  LayoutDashboard,
+  ShoppingBag, 
   Building2, 
   Bed, 
   CalendarCheck, 
@@ -37,6 +38,7 @@ const navigationGroups = [
     title: 'Property',
     items: [
       { name: 'Rooms & Grid', path: '/rooms', icon: Bed, permission: 'view rooms' },
+      { name: 'Services & Extras', path: '/services', icon: ShoppingBag, permission: 'view rooms' },
       { name: 'Housekeeping', path: '/housekeeping', icon: Sparkles, permission: 'view housekeeping' },
       { name: 'Maintenance', path: '/maintenance', icon: Wrench, permission: 'view maintenance' },
     ]

@@ -13,6 +13,7 @@ import ResetPasswordPage from './pages/auth/ResetPasswordPage';
 // Phase 3 Pages
 import HotelListPage from './pages/hotels/HotelListPage';
 import HotelSettingsPage from './pages/settings/HotelSettingsPage';
+import ServicesPage from './pages/rooms/ServicesPage';
 import AmenitiesPage from './pages/rooms/AmenitiesPage';
 import RoomTypesPage from './pages/rooms/RoomTypesPage';
 import RoomsPage from './pages/rooms/RoomsPage';
@@ -83,6 +84,7 @@ function App() {
                 {/* Phase 3 Master Data */}
                 <Route path="/hotels" element={<HotelListPage />} />
                 <Route path="/settings" element={<HotelSettingsPage />} />
+                <Route path="/services" element={<ServicesPage />} />
                 <Route path="/guests" element={<GuestListPage />} />
                 
                 {/* Rooms Sub-Routing */}
