@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { UserPlus, UserCheck, Calendar, CreditCard, Key } from 'lucide-react';
 import { useHotel } from '../../context/HotelContext';
+import { useCurrency } from '../../hooks/useCurrency';
 import { bookingsApi } from '../../api/bookings';
 import { guestsApi } from '../../api/guests';
 import { roomsApi } from '../../api/rooms';
@@ -45,6 +46,7 @@ const wizardSchema = z.object({
 
 const CreateBookingModal = ({ isOpen, onClose }) => {
   const { activeHotelId } = useHotel();
+  const { formatCurrency } = useCurrency();
   const queryClient = useQueryClient();
 
   const [step, setStep] = useState(1);
@@ -108,6 +110,14 @@ const CreateBookingModal = ({ isOpen, onClose }) => {
     label: `Room ${r.room_number} (${r.room_type?.name || 'Unknown Type'})`, 
     value: r.id 
   })) || [];
+
+  
+  const selectedRoomId = watch('room_id');
+  const selectedRoom = roomsData?.data?.find(r => r.id === Number(selectedRoomId));
+  const checkInDate = watch('check_in_date');
+  const checkOutDate = watch('check_out_date');
+  const nights = checkInDate && checkOutDate ? Math.max(1, differenceInDays(new Date(checkOutDate), new Date(checkInDate))) : 1;
+  const estimatedTotal = selectedRoom && selectedRoom.room_type ? selectedRoom.room_type.base_price * nights : 0;
 
   const handleNextStep = async () => {
     clearErrors();
@@ -271,6 +281,22 @@ const CreateBookingModal = ({ isOpen, onClose }) => {
         {step === 3 && (
           <div className="space-y-6 animate-in fade-in slide-in-from-right-4">
             
+            <div className="bg-white border border-zinc-200 p-4 rounded-xl space-y-3 mb-4">
+              <h4 className="text-sm font-semibold text-zinc-900 mb-2">Booking Summary</h4>
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-zinc-500">Duration</span>
+                <span className="font-medium text-zinc-900">{nights} Night{nights !== 1 ? 's' : ''}</span>
+              </div>
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-zinc-500">Room Rate</span>
+                <span className="font-medium text-zinc-900">{selectedRoom ? formatCurrency(selectedRoom.room_type?.base_price) : '--'} / night</span>
+              </div>
+              <div className="flex justify-between items-center text-sm font-bold pt-3 border-t border-zinc-100">
+                <span className="text-zinc-900">Estimated Total</span>
+                <span className="text-indigo-600">{formatCurrency(estimatedTotal)}</span>
+              </div>
+            </div>
+
             <div className="bg-blue-50 border border-blue-100 p-4 rounded-xl space-y-4">
               <div className="flex items-start gap-3">
                 <CreditCard className="w-5 h-5 text-blue-600 mt-0.5" />
