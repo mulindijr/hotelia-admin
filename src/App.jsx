@@ -1,5 +1,6 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from './context/AuthContext';
 import { HotelProvider } from './context/HotelContext';
@@ -47,6 +48,7 @@ const Placeholder = ({ title }) => <div className="p-6"><h1 className="text-2xl 
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
+      <Toaster position="top-right" />
       <BrowserRouter>
         <AuthProvider>
           <HotelProvider>
