@@ -41,6 +41,16 @@ export const bookingsApi = {
     return response.data;
   },
 
+  addPayment: async (hotelId, id, data) => {
+    const response = await api.post(`/hotels/${hotelId}/bookings/${id}/payments`, data);
+    return response.data;
+  },
+
+  patchBooking: async (hotelId, id, data) => {
+    const response = await api.patch(`/hotels/${hotelId}/bookings/${id}`, data);
+    return response.data;
+  },
+
   // Invoices & Payments related to bookings
   getBookingInvoice: async (hotelId, bookingId) => {
     const response = await api.get(`/hotels/${hotelId}/bookings/${bookingId}/invoice`, {

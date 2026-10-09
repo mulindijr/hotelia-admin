@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Edit2, Ban, Download } from 'lucide-react';
+import { ArrowLeft, Edit2, Ban, Download, Plus } from 'lucide-react';
 import { useHotel } from '../../context/HotelContext';
 import { useCurrency } from '../../hooks/useCurrency';
 import { bookingsApi } from '../../api/bookings';
@@ -10,6 +10,9 @@ import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import BookingStatusBadge from '../../components/bookings/BookingStatusBadge';
 import ConfirmModal from '../../components/common/ConfirmModal';
+import toast from 'react-hot-toast';
+import AddPaymentModal from '../../components/bookings/AddPaymentModal';
+import AddServiceModal from '../../components/bookings/AddServiceModal';
 import EmptyState from '../../components/common/EmptyState';
 
 const BookingDetailsPage = () => {
@@ -19,6 +22,8 @@ const BookingDetailsPage = () => {
   const { formatCurrency } = useCurrency();
   const queryClient = useQueryClient();
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [isServiceModalOpen, setIsServiceModalOpen] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: ['booking', activeHotelId, id],
@@ -30,6 +35,10 @@ const BookingDetailsPage = () => {
     mutationFn: (status) => bookingsApi.updateBookingStatus(activeHotelId, id, status),
     onSuccess: () => {
       queryClient.invalidateQueries(['booking', activeHotelId, id]);
+      toast.success('Service added successfully');
+    },
+    onError: (err) => {
+      toast.error(err.response?.data?.message || 'Failed to add service');
     }
   });
 
@@ -54,6 +63,41 @@ const BookingDetailsPage = () => {
     }
   });
 
+  const booking = data?.data;
+
+const addPaymentMutation = useMutation({
+    mutationFn: (data) => bookingsApi.addPayment(activeHotelId, id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['booking', activeHotelId, id]);
+      toast.success('Service added successfully');
+    },
+    onError: (err) => {
+      toast.error(err.response?.data?.message || 'Failed to add service');
+    }
+  });
+
+  const addServiceMutation = useMutation({
+    mutationFn: (newService) => {
+      const existingServices = booking?.services?.map(s => ({ id: s.id, quantity: s.pivot.quantity })) || [];
+      // check if existing service id exists
+      const existingIndex = existingServices.findIndex(s => s.id === newService.id);
+      if (existingIndex > -1) {
+        existingServices[existingIndex].quantity += newService.quantity;
+      } else {
+        existingServices.push(newService);
+      }
+      return bookingsApi.patchBooking(activeHotelId, id, { services: existingServices });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['booking', activeHotelId, id]);
+      toast.success('Service added successfully');
+    },
+    onError: (err) => {
+      toast.error(err.response?.data?.message || 'Failed to add service');
+    }
+  });
+
+    
   if (!activeHotelId) {
     return <EmptyState />;
   }
@@ -62,7 +106,10 @@ const BookingDetailsPage = () => {
     return <div className="flex justify-center p-12 text-zinc-500">Loading booking details...</div>;
   }
 
-  const booking = data?.data;
+  
+  const totalPaid = booking?.payments?.reduce((sum, p) => sum + Number(p.amount), 0) || 0;
+  const balanceDue = (booking?.total_amount || 0) - totalPaid;
+
 
   if (!booking) {
     return <div className="p-6 text-red-500">Booking not found.</div>;
@@ -150,21 +197,82 @@ const BookingDetailsPage = () => {
             </div>
             <div className="col-span-2">
               <p className="text-xs text-zinc-500">Special Requests</p>
-              <p className="text-sm text-zinc-900 italic">{booking.special_requests || 'None'}</p>
+              <p className="text-sm text-zinc-900 italic">{booking.notes || 'None'}</p>
             </div>
           </div>
+        </Card>
+
+        <Card title="Services & Extras" className="col-span-1 md:col-span-3">
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-sm text-zinc-500">Additional services charged to this booking</p>
+            <Button variant="outline" size="sm" onClick={() => setIsServiceModalOpen(true)}>
+              <Plus className="w-3 h-3 mr-1" />
+              Add Service
+            </Button>
+          </div>
+          
+          {booking.services && booking.services.length > 0 ? (
+            <div className="overflow-hidden rounded-lg border border-zinc-200">
+              <table className="w-full text-left text-sm">
+                <thead className="bg-zinc-50 border-b border-zinc-200 text-zinc-500">
+                  <tr>
+                    <th className="px-4 py-2 font-medium">Service Name</th>
+                    <th className="px-4 py-2 font-medium text-center">Quantity</th>
+                    <th className="px-4 py-2 font-medium text-right">Unit Price</th>
+                    <th className="px-4 py-2 font-medium text-right">Total Price</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-zinc-200 bg-white">
+                  {booking.services.map((service) => (
+                    <tr key={service.id}>
+                      <td className="px-4 py-2 text-zinc-900 font-medium">{service.name}</td>
+                      <td className="px-4 py-2 text-zinc-600 text-center">{service.pivot.quantity}</td>
+                      <td className="px-4 py-2 text-zinc-500 text-right">{formatCurrency(service.pivot.price)}</td>
+                      <td className="px-4 py-2 text-zinc-900 font-medium text-right">{formatCurrency(service.pivot.price * service.pivot.quantity)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="p-6 bg-zinc-50 border border-zinc-200 border-dashed rounded-xl text-center">
+              <p className="text-sm text-zinc-500">No services have been added to this booking.</p>
+            </div>
+          )}
         </Card>
       </div>
 
       <Card title="Financial Summary">
         <div className="flex flex-col gap-4">
-          <div className="flex justify-between items-center py-3 border-b border-zinc-100">
-            <span className="text-sm text-zinc-600">Total Price</span>
-            <span className="text-lg font-bold text-zinc-900">{formatCurrency(booking.total_amount)}</span>
+          <div className="flex flex-col gap-2 py-3 border-b border-zinc-100">
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-zinc-500">Subtotal (Rooms + Services)</span>
+              <span className="text-sm font-medium text-zinc-900">{formatCurrency(booking.total_amount)}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-zinc-500">Total Paid</span>
+              <span className="text-sm font-medium text-emerald-600">{formatCurrency(totalPaid)}</span>
+            </div>
+            <div className="flex justify-between items-center pt-2 mt-2 border-t border-zinc-100">
+              <span className="text-sm font-bold text-zinc-900">
+                {balanceDue < 0 ? 'Overpaid / Refund Due' : 'Remaining Balance'}
+              </span>
+              <span className={`text-lg font-bold ${balanceDue > 0 ? 'text-rose-600' : (balanceDue < 0 ? 'text-amber-600' : 'text-zinc-900')}`}>
+                {balanceDue < 0 ? '-' : ''}{formatCurrency(Math.abs(balanceDue))}
+              </span>
+            </div>
           </div>
           
           <div>
-            <h4 className="text-sm font-semibold text-zinc-900 mb-3">Payment History</h4>
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="text-sm font-semibold text-zinc-900">Payment History</h4>
+              {balanceDue > 0 && (
+                <Button variant="outline" size="sm" onClick={() => setIsPaymentModalOpen(true)}>
+                  <Plus className="w-3 h-3 mr-1" />
+                  Log Payment
+                </Button>
+              )}
+            </div>
             {booking.payments && booking.payments.length > 0 ? (
               <div className="overflow-hidden rounded-lg border border-zinc-200">
                 <table className="w-full text-left text-sm">
@@ -204,6 +312,29 @@ const BookingDetailsPage = () => {
         confirmText="Confirm Cancellation"
         isDestructive={true}
         isLoading={cancelMutation.isPending}
+      />
+
+      <AddPaymentModal
+        isOpen={isPaymentModalOpen}
+        onClose={() => setIsPaymentModalOpen(false)}
+        onAddPayment={(data, onSuccess) => {
+          addPaymentMutation.mutate(data, {
+            onSuccess: () => onSuccess()
+          });
+        }}
+        isLoading={addPaymentMutation.isPending}
+        balanceDue={balanceDue}
+      />
+
+      <AddServiceModal
+        isOpen={isServiceModalOpen}
+        onClose={() => setIsServiceModalOpen(false)}
+        onAddService={(data, onSuccess) => {
+          addServiceMutation.mutate(data, {
+            onSuccess: () => onSuccess()
+          });
+        }}
+        isLoading={addServiceMutation.isPending}
       />
     </div>
   );
