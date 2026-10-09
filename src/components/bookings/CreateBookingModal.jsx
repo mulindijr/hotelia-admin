@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import { differenceInDays } from 'date-fns';
 import { UserPlus, UserCheck, Calendar, CreditCard, Key } from 'lucide-react';
 import { useHotel } from '../../context/HotelContext';
 import { useCurrency } from '../../hooks/useCurrency';
@@ -107,7 +108,7 @@ const CreateBookingModal = ({ isOpen, onClose }) => {
   
   // Format rooms to group by room type
   const roomOptions = roomsData?.data?.map(r => ({ 
-    label: `Room ${r.room_number} (${r.room_type?.name || 'Unknown Type'})`, 
+    label: `Room ${r.room_number} (${r.room_type?.name || 'Unknown Type'}) - ${formatCurrency(r.room_type?.base_price)} / night`, 
     value: r.id 
   })) || [];
 
