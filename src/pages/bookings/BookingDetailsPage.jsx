@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Edit2, Ban, Download, Plus } from 'lucide-react';
+import { ArrowLeft, Edit2, Ban, Download, Plus, CreditCard } from 'lucide-react';
 import { useHotel } from '../../context/HotelContext';
 import { useCurrency } from '../../hooks/useCurrency';
 import { bookingsApi } from '../../api/bookings';
@@ -202,15 +202,22 @@ const addPaymentMutation = useMutation({
           </div>
         </Card>
 
-        <Card title="Services & Extras" className="col-span-1 md:col-span-3">
-          <div className="flex items-center justify-between mb-4">
-            <p className="text-sm text-zinc-500">Additional services charged to this booking</p>
-            <Button variant="outline" size="sm" onClick={() => setIsServiceModalOpen(true)}>
-              <Plus className="w-3 h-3 mr-1" />
+        <Card 
+          title="Services & Extras" 
+          subtitle="Additional services charged to this booking"
+          className="col-span-1 md:col-span-3"
+          headerActions={
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => setIsServiceModalOpen(true)}
+              className="gap-1.5 border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50 text-zinc-800 font-medium shadow-xs"
+            >
+              <Plus className="w-3.5 h-3.5 text-zinc-600" />
               Add Service
             </Button>
-          </div>
-          
+          }
+        >
           {booking.services && booking.services.length > 0 ? (
             <div className="overflow-hidden rounded-lg border border-zinc-200">
               <table className="w-full text-left text-sm">
@@ -235,8 +242,17 @@ const addPaymentMutation = useMutation({
               </table>
             </div>
           ) : (
-            <div className="p-6 bg-zinc-50 border border-zinc-200 border-dashed rounded-xl text-center">
-              <p className="text-sm text-zinc-500">No services have been added to this booking.</p>
+            <div className="py-8 px-4 bg-zinc-50/50 border border-zinc-200 border-dashed rounded-xl text-center flex flex-col items-center justify-center">
+              <p className="text-sm text-zinc-500 mb-3">No services have been added to this booking.</p>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setIsServiceModalOpen(true)}
+                className="gap-1.5 border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50 text-zinc-800 font-medium shadow-xs"
+              >
+                <Plus className="w-3.5 h-3.5 text-zinc-600" />
+                Add Service
+              </Button>
             </div>
           )}
         </Card>
@@ -267,8 +283,13 @@ const addPaymentMutation = useMutation({
             <div className="flex items-center justify-between mb-3">
               <h4 className="text-sm font-semibold text-zinc-900">Payment History</h4>
               {balanceDue > 0 && (
-                <Button variant="outline" size="sm" onClick={() => setIsPaymentModalOpen(true)}>
-                  <Plus className="w-3 h-3 mr-1" />
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => setIsPaymentModalOpen(true)}
+                  className="gap-1.5 border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50 text-zinc-800 font-medium shadow-xs"
+                >
+                  <CreditCard className="w-3.5 h-3.5 text-zinc-600" />
                   Log Payment
                 </Button>
               )}
