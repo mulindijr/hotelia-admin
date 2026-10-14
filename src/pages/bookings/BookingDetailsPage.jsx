@@ -107,6 +107,13 @@ const addPaymentMutation = useMutation({
   }
 
   
+  const servicesSubtotal = booking?.services?.reduce((sum, service) => {
+    const qty = Number(service.pivot?.quantity ?? 1);
+    const price = Number(service.pivot?.price ?? service.price ?? 0);
+    return sum + (price * qty);
+  }, 0) || 0;
+
+  const roomsSubtotal = Math.max(0, (Number(booking?.total_amount) || 0) - servicesSubtotal);
   const totalPaid = booking?.payments?.reduce((sum, p) => sum + Number(p.amount), 0) || 0;
   const balanceDue = (booking?.total_amount || 0) - totalPaid;
 
@@ -239,6 +246,16 @@ const addPaymentMutation = useMutation({
                     </tr>
                   ))}
                 </tbody>
+                <tfoot className="bg-zinc-50 border-t border-zinc-200">
+                  <tr>
+                    <td colSpan={3} className="px-4 py-2.5 text-sm font-semibold text-zinc-900 text-right">
+                      Services Subtotal
+                    </td>
+                    <td className="px-4 py-2.5 text-sm font-bold text-zinc-900 text-right">
+                      {formatCurrency(servicesSubtotal)}
+                    </td>
+                  </tr>
+                </tfoot>
               </table>
             </div>
           ) : (
@@ -260,16 +277,27 @@ const addPaymentMutation = useMutation({
 
       <Card title="Financial Summary">
         <div className="flex flex-col gap-4">
-          <div className="flex flex-col gap-2 py-3 border-b border-zinc-100">
+          <div className="flex flex-col gap-3 py-3 border-b border-zinc-100">
+            {/* 1. Rooms Subtotal */}
             <div className="flex justify-between items-center">
-              <span className="text-sm text-zinc-500">Subtotal (Rooms + Services)</span>
-              <span className="text-sm font-medium text-zinc-900">{formatCurrency(booking.total_amount)}</span>
+              <span className="text-sm text-zinc-500">Rooms Subtotal</span>
+              <span className="text-sm font-medium text-zinc-900">{formatCurrency(roomsSubtotal)}</span>
             </div>
+
+            {/* 2. Services Subtotal */}
             <div className="flex justify-between items-center">
-              <span className="text-sm text-zinc-500">Total Paid</span>
-              <span className="text-sm font-medium text-emerald-600">{formatCurrency(totalPaid)}</span>
+              <span className="text-sm text-zinc-500">Services Subtotal</span>
+              <span className="text-sm font-medium text-zinc-900">{formatCurrency(servicesSubtotal)}</span>
             </div>
-            <div className="flex justify-between items-center pt-2 mt-2 border-t border-zinc-100">
+
+            {/* 3. Total Booking Amount */}
+            <div className="flex justify-between items-center pt-2 border-t border-zinc-100">
+              <span className="text-sm font-semibold text-zinc-900">Total Booking Amount</span>
+              <span className="text-base font-bold text-zinc-900">{formatCurrency(booking.total_amount)}</span>
+            </div>
+
+            {/* 4. Remaining Balance */}
+            <div className="flex justify-between items-center pt-2 border-t border-zinc-100">
               <span className="text-sm font-bold text-zinc-900">
                 {balanceDue < 0 ? 'Overpaid / Refund Due' : 'Remaining Balance'}
               </span>
@@ -315,6 +343,16 @@ const addPaymentMutation = useMutation({
                       </tr>
                     ))}
                   </tbody>
+                  <tfoot className="bg-zinc-50 border-t border-zinc-200">
+                    <tr>
+                      <td colSpan={3} className="px-4 py-2.5 text-sm font-semibold text-zinc-900 text-right">
+                        Total Paid
+                      </td>
+                      <td className="px-4 py-2.5 text-sm font-bold text-emerald-600 text-right">
+                        {formatCurrency(totalPaid)}
+                      </td>
+                    </tr>
+                  </tfoot>
                 </table>
               </div>
             ) : (
