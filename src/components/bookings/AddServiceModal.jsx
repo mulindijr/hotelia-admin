@@ -1,13 +1,13 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import Modal from '../../components/common/Modal';
 import Select from '../../components/common/Select';
 import Input from '../../components/common/Input';
 import Button from '../../components/common/Button';
-import api from '../../api/client';
+import { servicesApi } from '../../api/services';
 import { useHotel } from '../../context/HotelContext';
 import { useCurrency } from '../../hooks/useCurrency';
 
@@ -21,11 +21,11 @@ const AddServiceModal = ({ isOpen, onClose, onAddService, isLoading }) => {
   const { formatCurrency } = useCurrency();
 
   const { data: servicesData, isLoading: isLoadingServices } = useQuery({
-    queryKey: ['services', activeHotelId],
-    queryFn: async () => {
-      const response = await api.get(`/hotels/${activeHotelId}/services`);
-      return response.data;
-    },
+    queryKey: ['services', activeHotelId, { is_active: true }],
+    queryFn: () => servicesApi.getServices(activeHotelId, {
+      'filter[is_active]': true,
+      per_page: 100
+    }),
     enabled: !!activeHotelId && isOpen
   });
 
@@ -37,8 +37,17 @@ const AddServiceModal = ({ isOpen, onClose, onAddService, isLoading }) => {
     }
   });
 
+  const rawServices = Array.isArray(servicesData)
+    ? servicesData
+    : (Array.isArray(servicesData?.data) ? servicesData.data : []);
+
+  // Filter only active services
+  const activeServices = rawServices.filter(
+    s => s.is_active === true || s.is_active === 1 || s.is_active === '1'
+  );
+
   const selectedServiceId = watch('service_id');
-  const selectedService = servicesData?.data?.find(s => s.id === Number(selectedServiceId));
+  const selectedService = activeServices.find(s => s.id === Number(selectedServiceId));
   const quantity = watch('quantity');
 
   const onSubmit = (data) => {
@@ -51,10 +60,10 @@ const AddServiceModal = ({ isOpen, onClose, onAddService, isLoading }) => {
     });
   };
 
-  const serviceOptions = servicesData?.data?.map(s => ({
+  const serviceOptions = activeServices.map(s => ({
     label: `${s.name} (${formatCurrency(s.price)})`,
     value: s.id
-  })) || [];
+  }));
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Add Service/Extra">
