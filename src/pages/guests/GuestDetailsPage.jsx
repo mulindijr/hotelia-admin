@@ -23,8 +23,13 @@ import {
   Calendar,
   Building,
   Search,
-  X
+  X,
+  Plus,
+  Crown,
+  Award,
+  Sparkles
 } from 'lucide-react';
+import CreateBookingModal from '../../components/bookings/CreateBookingModal';
 import { guestsApi } from '../../api/guests';
 import { useHotel } from '../../context/HotelContext';
 import { useCurrency } from '../../hooks/useCurrency';
@@ -52,6 +57,7 @@ const GuestDetailsPage = () => {
   const { formatCurrency } = useCurrency();
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isCreateBookingOpen, setIsCreateBookingOpen] = useState(false);
 
   // Table pagination and search state
   const [searchQuery, setSearchQuery] = useState('');
@@ -169,6 +175,16 @@ const GuestDetailsPage = () => {
     return sum + (diff > 0 ? diff : 0);
   }, 0);
 
+  const loyaltyTier = useMemo(() => {
+    if (completedStays >= 5 || totalSpent >= 2000) {
+      return { label: 'VIP Guest', color: 'bg-amber-100 text-amber-800 border-amber-300', icon: Crown };
+    }
+    if (completedStays >= 2 || totalSpent >= 500) {
+      return { label: 'Repeat Guest', color: 'bg-emerald-100 text-emerald-800 border-emerald-300', icon: Award };
+    }
+    return { label: 'Standard Guest', color: 'bg-zinc-100 text-zinc-700 border-zinc-200', icon: User };
+  }, [completedStays, totalSpent]);
+
   // 4. Search Filter
   const filteredBookings = useMemo(() => {
     if (!searchQuery.trim()) return hotelBookings;
@@ -256,6 +272,10 @@ const GuestDetailsPage = () => {
               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-zinc-100 text-zinc-800 border border-zinc-200">
                 Guest #{guest.id}
               </span>
+              <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold border ${loyaltyTier.color}`}>
+                <loyaltyTier.icon className="w-3.5 h-3.5" />
+                {loyaltyTier.label}
+              </span>
             </div>
             <p className="text-sm text-zinc-500 mt-0.5">
               Profile registered {guest.created_at ? new Date(guest.created_at).toLocaleDateString() : ''}
@@ -267,6 +287,10 @@ const GuestDetailsPage = () => {
           <Button variant="secondary" onClick={() => setIsEditModalOpen(true)}>
             <Edit2 className="w-4 h-4 mr-2" />
             Edit Profile
+          </Button>
+          <Button onClick={() => setIsCreateBookingOpen(true)}>
+            <Plus className="w-4 h-4 mr-2" />
+            New Reservation
           </Button>
         </div>
       </div>
@@ -706,6 +730,13 @@ const GuestDetailsPage = () => {
           queryClient.invalidateQueries(['guest', id]);
           refetchGuest();
         }}
+      />
+
+      {/* Create Reservation Modal for this Guest */}
+      <CreateBookingModal
+        isOpen={isCreateBookingOpen}
+        onClose={() => setIsCreateBookingOpen(false)}
+        initialGuest={guest}
       />
     </div>
   );

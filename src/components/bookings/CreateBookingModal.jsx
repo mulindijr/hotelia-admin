@@ -4,7 +4,8 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { differenceInDays } from 'date-fns';
-import { UserPlus, UserCheck, Calendar, CreditCard, Key } from 'lucide-react';
+import { UserPlus, UserCheck, Calendar, CreditCard, Key, CheckCircle, ShieldCheck } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 import { useHotel } from '../../context/HotelContext';
 import { useCurrency } from '../../hooks/useCurrency';
 import { bookingsApi } from '../../api/bookings';
@@ -45,7 +46,7 @@ const wizardSchema = z.object({
   }
 });
 
-const CreateBookingModal = ({ isOpen, onClose }) => {
+const CreateBookingModal = ({ isOpen, onClose, initialGuest = null }) => {
   const { activeHotelId } = useHotel();
   const { formatCurrency } = useCurrency();
   const queryClient = useQueryClient();
@@ -55,7 +56,7 @@ const CreateBookingModal = ({ isOpen, onClose }) => {
   const { data: guestsData, isLoading: isLoadingGuests } = useQuery({
     queryKey: ['guestsList'],
     queryFn: () => guestsApi.getGuests({ perPage: 100 }),
-    enabled: isOpen && step === 1,
+    enabled: isOpen && step === 1 && !initialGuest,
   });
 
   const { data: roomsData, isLoading: isLoadingRooms } = useQuery({
@@ -77,7 +78,7 @@ const CreateBookingModal = ({ isOpen, onClose }) => {
 
   const guestType = watch('guestType');
 
-  // Reset wizard on close
+  // Reset wizard on close / open with initialGuest support
   useEffect(() => {
     if (!isOpen) {
       setTimeout(() => {
@@ -90,8 +91,16 @@ const CreateBookingModal = ({ isOpen, onClose }) => {
       const tmrw = new Date(Date.now() + 86400000).toISOString().split('T')[0];
       setValue('check_in_date', today);
       setValue('check_out_date', tmrw);
+
+      if (initialGuest?.id) {
+        setValue('guestType', 'existing');
+        setValue('guest_id', Number(initialGuest.id));
+        setStep(2); // Jump directly to Room & Dates for preselected guest
+      } else {
+        setStep(1);
+      }
     }
-  }, [isOpen, reset, setValue]);
+  }, [isOpen, initialGuest, reset, setValue]);
 
   const mutation = useMutation({
     mutationFn: (payload) => bookingsApi.createBooking(activeHotelId, payload),
@@ -100,7 +109,18 @@ const CreateBookingModal = ({ isOpen, onClose }) => {
       queryClient.invalidateQueries(['rooms', activeHotelId]);
       queryClient.invalidateQueries(['roomsList', activeHotelId]);
       queryClient.invalidateQueries(['guestsList']);
+      if (initialGuest?.id) {
+        queryClient.invalidateQueries(['guest-bookings', initialGuest.id.toString(), activeHotelId]);
+        queryClient.invalidateQueries(['guest-bookings', Number(initialGuest.id), activeHotelId]);
+        queryClient.invalidateQueries(['guest', initialGuest.id.toString()]);
+        queryClient.invalidateQueries(['guest', Number(initialGuest.id)]);
+      }
+      toast.success('Reservation created successfully!');
       onClose();
+    },
+    onError: (err) => {
+      const msg = err.response?.data?.message || err.response?.data?.errors?.rooms?.[0] || 'Failed to create booking';
+      toast.error(msg);
     }
   });
 
@@ -112,7 +132,6 @@ const CreateBookingModal = ({ isOpen, onClose }) => {
     value: r.id 
   })) || [];
 
-  
   const selectedRoomId = watch('room_id');
   const selectedRoom = roomsData?.data?.find(r => r.id === Number(selectedRoomId));
   const checkInDate = watch('check_in_date');
@@ -179,11 +198,14 @@ const CreateBookingModal = ({ isOpen, onClose }) => {
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Walk-In & New Reservation Wizard"
-      maxWidth="max-w-3xl"
+      title={initialGuest ? `New Reservation for ${initialGuest.first_name} ${initialGuest.last_name}` : "Create New Booking"}
+      maxWidth="max-w-2xl"
       footer={
         <div className="flex justify-between w-full">
-          <Button variant="secondary" onClick={() => step > 1 ? setStep(step - 1) : onClose()}>
+          <Button 
+            variant="secondary" 
+            onClick={() => step > 1 ? setStep(step - 1) : onClose()}
+          >
             {step > 1 ? 'Back' : 'Cancel'}
           </Button>
           {step < 3 ? (
@@ -215,48 +237,84 @@ const CreateBookingModal = ({ isOpen, onClose }) => {
       <form className="space-y-6">
         {step === 1 && (
           <div className="space-y-6 animate-in fade-in slide-in-from-right-4">
-            <div className="flex gap-4 p-1 bg-zinc-100 rounded-lg w-fit">
-              <button
-                type="button"
-                onClick={() => setValue('guestType', 'existing')}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${guestType === 'existing' ? 'bg-white shadow-sm text-zinc-900' : 'text-zinc-500 hover:text-zinc-700'}`}
-              >
-                Existing Guest
-              </button>
-              <button
-                type="button"
-                onClick={() => setValue('guestType', 'new')}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${guestType === 'new' ? 'bg-white shadow-sm text-zinc-900' : 'text-zinc-500 hover:text-zinc-700'}`}
-              >
-                Create New Guest
-              </button>
-            </div>
-
-            {guestType === 'existing' ? (
-              <Select 
-                label="Search Existing Guest" 
-                options={[{ label: 'Select Guest...', value: '' }, ...guestOptions]} 
-                {...register('guest_id')} 
-                error={errors.guest_id?.message}
-                disabled={isLoadingGuests}
-              />
-            ) : (
-              <div className="space-y-4 bg-zinc-50 p-4 rounded-xl border border-zinc-100">
-                <div className="grid grid-cols-2 gap-4">
-                  <Input label="First Name *" {...register('guest.first_name')} error={errors.guest?.first_name?.message} />
-                  <Input label="Last Name *" {...register('guest.last_name')} error={errors.guest?.last_name?.message} />
+            {initialGuest ? (
+              <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-sm">
+                    {initialGuest.first_name?.[0]}{initialGuest.last_name?.[0]}
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-bold text-zinc-900">{initialGuest.first_name} {initialGuest.last_name}</span>
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-200 text-emerald-800 uppercase tracking-wider">
+                        Preselected Guest
+                      </span>
+                    </div>
+                    <p className="text-xs text-zinc-600 mt-0.5">{initialGuest.email} • {initialGuest.phone || 'No phone'}</p>
+                  </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <Input type="email" label="Email Address *" {...register('guest.email')} error={errors.guest?.email?.message} />
-                  <Input label="Phone Number" {...register('guest.phone')} error={errors.guest?.phone?.message} />
-                </div>
+                <Button 
+                  size="sm" 
+                  variant="secondary" 
+                  onClick={() => setStep(2)}
+                  className="text-xs"
+                >
+                  Continue to Room Selection
+                </Button>
               </div>
+            ) : (
+              <>
+                <div className="flex gap-4 p-1 bg-zinc-100 rounded-lg w-fit">
+                  <button
+                    type="button"
+                    onClick={() => setValue('guestType', 'existing')}
+                    className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${guestType === 'existing' ? 'bg-white shadow-sm text-zinc-900' : 'text-zinc-500 hover:text-zinc-700'}`}
+                  >
+                    Existing Guest
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setValue('guestType', 'new')}
+                    className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${guestType === 'new' ? 'bg-white shadow-sm text-zinc-900' : 'text-zinc-500 hover:text-zinc-700'}`}
+                  >
+                    Create New Guest
+                  </button>
+                </div>
+
+                {guestType === 'existing' ? (
+                  <Select 
+                    label="Search Existing Guest" 
+                    options={[{ label: 'Select Guest...', value: '' }, ...guestOptions]} 
+                    {...register('guest_id')} 
+                    error={errors.guest_id?.message}
+                    disabled={isLoadingGuests}
+                  />
+                ) : (
+                  <div className="space-y-4 bg-zinc-50 p-4 rounded-xl border border-zinc-100">
+                    <div className="grid grid-cols-2 gap-4">
+                      <Input label="First Name *" {...register('guest.first_name')} error={errors.guest?.first_name?.message} />
+                      <Input label="Last Name *" {...register('guest.last_name')} error={errors.guest?.last_name?.message} />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <Input type="email" label="Email Address *" {...register('guest.email')} error={errors.guest?.email?.message} />
+                      <Input label="Phone Number" {...register('guest.phone')} error={errors.guest?.phone?.message} />
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </div>
         )}
 
         {step === 2 && (
           <div className="space-y-6 animate-in fade-in slide-in-from-right-4">
+            {initialGuest && (
+              <div className="flex items-center justify-between px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-xs">
+                <span>Reserving for: <strong className="text-zinc-900">{initialGuest.first_name} {initialGuest.last_name}</strong></span>
+                <span className="text-zinc-500">{initialGuest.email}</span>
+              </div>
+            )}
+
             <Select 
               label="Select Available Room *" 
               options={[{ label: 'Select Room...', value: '' }, ...roomOptions]} 
@@ -303,7 +361,7 @@ const CreateBookingModal = ({ isOpen, onClose }) => {
                 <CreditCard className="w-5 h-5 text-blue-600 mt-0.5" />
                 <div className="flex-1">
                   <h4 className="text-sm font-semibold text-blue-900">Record Initial Payment</h4>
-                  <p className="text-sm text-blue-700/80 mt-1">If the walk-in guest is paying right now, record the deposit or full amount.</p>
+                  <p className="text-sm text-blue-700/80 mt-1">If the guest is paying right now, record the deposit or full amount.</p>
                   
                   <div className="mt-4 grid grid-cols-2 gap-4">
                     <Input 
@@ -336,7 +394,7 @@ const CreateBookingModal = ({ isOpen, onClose }) => {
               />
               <div>
                 <div className="text-sm font-semibold text-zinc-900">Immediate Check-In</div>
-                <div className="text-sm text-zinc-500">Automatically mark this booking as "Checked In" and change the room status to "Occupied". Perfect for walk-ins holding the key.</div>
+                <div className="text-sm text-zinc-500">Automatically mark this booking as "Checked In" and change the room status to "Occupied". Perfect for guests holding the key.</div>
               </div>
             </label>
 

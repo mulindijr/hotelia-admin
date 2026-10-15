@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, Eye, Download } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { bookingsApi } from '../../api/bookings';
 import { useHotel } from '../../context/HotelContext';
 import { useCurrency } from '../../hooks/useCurrency';
@@ -91,7 +91,16 @@ const BookingListPage = () => {
     },
     { 
       header: 'Guest', 
-      render: (row) => row.guest ? `${row.guest.first_name} ${row.guest.last_name}` : 'Unknown'
+      render: (row) => row.guest ? (
+        <Link 
+          to={`/guests/${row.guest_id || row.guest.id}`}
+          onClick={(e) => e.stopPropagation()}
+          className="font-medium text-zinc-900 hover:text-emerald-600 hover:underline"
+          title="View Guest Profile"
+        >
+          {row.guest.first_name} {row.guest.last_name}
+        </Link>
+      ) : 'Unknown'
     },
     { 
       header: 'Dates',
@@ -114,7 +123,16 @@ const BookingListPage = () => {
       header: 'Status',
       sortable: true,
       accessor: 'status',
-      render: (row) => <BookingStatusBadge status={row.status} />
+      render: (row) => (
+        <div className="flex flex-col gap-1 items-start">
+          <BookingStatusBadge status={row.status} />
+          {row.is_overbooked && (
+            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300 uppercase tracking-wider">
+              Overbooked
+            </span>
+          )}
+        </div>
+      )
     },
     {
       header: 'Actions',

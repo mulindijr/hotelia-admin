@@ -1,7 +1,23 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Edit2, Ban, Download, Plus, CreditCard } from 'lucide-react';
+import { 
+  ArrowLeft, 
+  Edit2, 
+  Ban, 
+  Download, 
+  Plus, 
+  CreditCard, 
+  ExternalLink, 
+  BedDouble, 
+  CalendarRange, 
+  Printer, 
+  AlertCircle, 
+  User 
+} from 'lucide-react';
+import { Link } from 'react-router-dom';
+import ModifyBookingModal from '../../components/bookings/ModifyBookingModal';
+import RegistrationCardModal from '../../components/bookings/RegistrationCardModal';
 import { useHotel } from '../../context/HotelContext';
 import { useCurrency } from '../../hooks/useCurrency';
 import { bookingsApi } from '../../api/bookings';
@@ -27,6 +43,8 @@ const BookingDetailsPage = () => {
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [isServiceModalOpen, setIsServiceModalOpen] = useState(false);
   const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
+  const [isModifyStayModalOpen, setIsModifyStayModalOpen] = useState(false);
+  const [isRegCardOpen, setIsRegCardOpen] = useState(false);
 
   const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ['booking', activeHotelId, id],
@@ -222,6 +240,11 @@ const BookingDetailsPage = () => {
             <div className="flex items-center gap-3">
               <h1 className="text-2xl font-bold text-zinc-900">Reservation #{booking.booking_reference}</h1>
               <BookingStatusBadge status={booking.status} />
+              {booking.is_overbooked && (
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-300 uppercase tracking-wider">
+                  Overbooked
+                </span>
+              )}
             </div>
             <p className="mt-1 text-sm text-zinc-500">Created on {new Date(booking.created_at).toLocaleString()}</p>
           </div>
@@ -248,6 +271,24 @@ const BookingDetailsPage = () => {
               Cancel
             </Button>
           )}
+          {(booking.status === 'pending' || booking.status === 'confirmed' || booking.status === 'checked_in') && (
+            <Button 
+              variant="secondary" 
+              onClick={() => setIsModifyStayModalOpen(true)}
+              title="Modify stay dates or reassign room"
+            >
+              <CalendarRange className="w-4 h-4 mr-2 text-zinc-500" />
+              Modify Stay
+            </Button>
+          )}
+          <Button 
+            variant="secondary" 
+            onClick={() => setIsRegCardOpen(true)}
+            title="Print check-in registration card"
+          >
+            <Printer className="w-4 h-4 mr-2 text-zinc-500" />
+            Reg Card
+          </Button>
           <Button 
             variant="secondary" 
             onClick={() => setIsInvoiceModalOpen(true)} 
@@ -260,21 +301,79 @@ const BookingDetailsPage = () => {
         </div>
       </div>
 
+      {/* Overbooking Alert Banner */}
+      {booking.is_overbooked && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs animate-in fade-in">
+          <div className="flex items-start gap-3">
+            <div className="w-9 h-9 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center shrink-0 mt-0.5">
+              <AlertCircle className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-amber-900">Overbooking Alert</h3>
+              <p className="text-xs text-amber-700 mt-0.5">
+                This reservation is flagged as overbooked due to a room scheduling conflict. Reassigning to an available room will resolve this conflict.
+              </p>
+            </div>
+          </div>
+          <Button 
+            onClick={() => setIsModifyStayModalOpen(true)}
+            className="bg-amber-600 hover:bg-amber-700 text-white shrink-0"
+          >
+            <BedDouble className="w-4 h-4 mr-1.5" />
+            Reassign Room
+          </Button>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card title="Guest Details" className="col-span-1">
           <div className="space-y-4">
             <div>
               <p className="text-xs text-zinc-500">Name</p>
-              <p className="text-sm font-medium text-zinc-900">{booking.guest?.first_name} {booking.guest?.last_name}</p>
+              {(booking.guest_id || booking.guest?.id) ? (
+                <Link 
+                  to={`/guests/${booking.guest_id || booking.guest?.id}`}
+                  className="inline-flex items-center gap-1.5 text-sm font-bold text-emerald-600 hover:text-emerald-700 hover:underline group mt-0.5"
+                  title="View Guest Details"
+                >
+                  <span>{booking.guest?.first_name} {booking.guest?.last_name}</span>
+                  <ExternalLink className="w-3.5 h-3.5 opacity-60 group-hover:opacity-100 transition-opacity" />
+                </Link>
+              ) : (
+                <p className="text-sm font-medium text-zinc-900">{booking.guest?.first_name} {booking.guest?.last_name}</p>
+              )}
             </div>
             <div>
               <p className="text-xs text-zinc-500">Email</p>
-              <p className="text-sm text-zinc-900">{booking.guest?.email}</p>
+              <p className="text-sm text-zinc-900">{booking.guest?.email || '—'}</p>
             </div>
             <div>
               <p className="text-xs text-zinc-500">Phone</p>
-              <p className="text-sm text-zinc-900">{booking.guest?.phone}</p>
+              <p className="text-sm text-zinc-900">{booking.guest?.phone || '—'}</p>
             </div>
+            {booking.guest?.nationality && (
+              <div>
+                <p className="text-xs text-zinc-500">Nationality</p>
+                <p className="text-sm text-zinc-900">{booking.guest.nationality}</p>
+              </div>
+            )}
+            {(booking.guest?.passport_number || booking.guest?.national_id) && (
+              <div>
+                <p className="text-xs text-zinc-500">Passport / ID</p>
+                <p className="text-sm font-mono text-zinc-900">{booking.guest.passport_number || booking.guest.national_id}</p>
+              </div>
+            )}
+            {(booking.guest_id || booking.guest?.id) && (
+              <div className="pt-2 border-t border-zinc-100">
+                <Link 
+                  to={`/guests/${booking.guest_id || booking.guest?.id}`}
+                  className="inline-flex items-center justify-center w-full px-3 py-1.5 text-xs font-medium text-zinc-700 bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 rounded-lg transition-colors gap-1.5"
+                >
+                  <User className="w-3.5 h-3.5 text-zinc-500" />
+                  View Full Guest History
+                </Link>
+              </div>
+            )}
           </div>
         </Card>
 
@@ -502,6 +601,18 @@ const BookingDetailsPage = () => {
         booking={booking}
         onConfirm={({ emailToGuest }) => invoiceMutation.mutate({ emailToGuest })}
         isLoading={invoiceMutation.isPending}
+      />
+
+      <ModifyBookingModal
+        isOpen={isModifyStayModalOpen}
+        onClose={() => setIsModifyStayModalOpen(false)}
+        booking={booking}
+      />
+
+      <RegistrationCardModal
+        isOpen={isRegCardOpen}
+        onClose={() => setIsRegCardOpen(false)}
+        booking={booking}
       />
     </div>
   );
