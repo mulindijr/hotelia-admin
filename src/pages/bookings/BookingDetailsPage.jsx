@@ -36,12 +36,17 @@ const BookingDetailsPage = () => {
 
   const updateStatusMutation = useMutation({
     mutationFn: (status) => bookingsApi.updateBookingStatus(activeHotelId, id, status),
-    onSuccess: () => {
+    onSuccess: (_, status) => {
       queryClient.invalidateQueries(['booking', activeHotelId, id]);
-      toast.success('Service added successfully');
+      const statusMessages = {
+        checked_out: 'Guest checked out successfully',
+        checked_in: 'Guest checked in successfully',
+        confirmed: 'Booking confirmed successfully',
+      };
+      toast.success(statusMessages[status] || 'Booking status updated successfully');
     },
     onError: (err) => {
-      toast.error(err.response?.data?.message || 'Failed to add service');
+      toast.error(err.response?.data?.message || 'Failed to update booking status');
     }
   });
 
@@ -49,7 +54,11 @@ const BookingDetailsPage = () => {
     mutationFn: () => bookingsApi.cancelBooking(activeHotelId, id),
     onSuccess: () => {
       queryClient.invalidateQueries(['booking', activeHotelId, id]);
+      toast.success('Booking cancelled successfully');
       setIsCancelModalOpen(false);
+    },
+    onError: (err) => {
+      toast.error(err.response?.data?.message || 'Failed to cancel booking');
     }
   });
 
@@ -102,14 +111,14 @@ const BookingDetailsPage = () => {
 
   const booking = data?.data;
 
-const addPaymentMutation = useMutation({
+  const addPaymentMutation = useMutation({
     mutationFn: (data) => bookingsApi.addPayment(activeHotelId, id, data),
     onSuccess: () => {
       queryClient.invalidateQueries(['booking', activeHotelId, id]);
-      toast.success('Service added successfully');
+      toast.success('Payment recorded successfully');
     },
     onError: (err) => {
-      toast.error(err.response?.data?.message || 'Failed to add service');
+      toast.error(err.response?.data?.message || 'Failed to record payment');
     }
   });
 
