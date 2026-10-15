@@ -10,6 +10,8 @@ import Button from '../../components/common/Button';
 import CreateBookingModal from '../../components/bookings/CreateBookingModal';
 import BookingStatusBadge from '../../components/bookings/BookingStatusBadge';
 import EmptyState from '../../components/common/EmptyState';
+import { downloadBlob } from '../../api/client';
+import toast from 'react-hot-toast';
 
 const BookingListPage = () => {
   const { activeHotelId } = useHotel();
@@ -47,16 +49,29 @@ const BookingListPage = () => {
   });
 
   const downloadInvoiceMutation = useMutation({
-    mutationFn: (bookingId) => bookingsApi.getBookingInvoice(activeHotelId, bookingId),
-    onSuccess: (response, bookingId) => {
-      // Create a blob link to download the PDF
-      const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `invoice-${bookingId}.pdf`);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
+    mutationFn: (bookingId) => bookingsApi.downloadInvoice(activeHotelId, bookingId),
+    onSuccess: async (response, bookingId) => {
+      if (response.data instanceof Blob && response.data.type === 'application/json') {
+        const text = await response.data.text();
+        const json = JSON.parse(text);
+        throw new Error(json.message || 'Failed to generate PDF invoice');
+      }
+
+      downloadBlob(response.data, `invoice-${bookingId}.pdf`);
+      toast.success('Invoice downloaded successfully');
+    },
+    onError: async (err) => {
+      let message = 'Failed to download invoice';
+      if (err.response?.data instanceof Blob) {
+        try {
+          const text = await err.response.data.text();
+          const json = JSON.parse(text);
+          if (json.message) message = json.message;
+        } catch (_) {}
+      } else if (err.message) {
+        message = err.message;
+      }
+      toast.error(message);
     }
   });
 
@@ -93,7 +108,7 @@ const BookingListPage = () => {
       header: 'Total Price',
       sortable: true,
       sortField: 'total_amount',
-      render: (row) => formatCurrency(row.total_amount)
+      render: (row) => formatCurrency(row.grand_total ?? row.total_amount)
     },
     { 
       header: 'Status',

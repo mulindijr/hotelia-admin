@@ -51,15 +51,29 @@ const BookingDetailsPage = () => {
   });
 
   const downloadInvoiceMutation = useMutation({
-    mutationFn: () => bookingsApi.getBookingInvoice(activeHotelId, id),
-    onSuccess: (response) => {
-      const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `invoice-${booking?.booking_reference || id}.pdf`);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
+    mutationFn: () => bookingsApi.downloadInvoice(activeHotelId, id),
+    onSuccess: async (response) => {
+      if (response.data instanceof Blob && response.data.type === 'application/json') {
+        const text = await response.data.text();
+        const json = JSON.parse(text);
+        throw new Error(json.message || 'Failed to generate PDF invoice');
+      }
+
+      downloadBlob(response.data, `invoice-${booking?.booking_reference || id}.pdf`);
+      toast.success('Invoice downloaded successfully');
+    },
+    onError: async (err) => {
+      let message = 'Failed to download invoice';
+      if (err.response?.data instanceof Blob) {
+        try {
+          const text = await err.response.data.text();
+          const json = JSON.parse(text);
+          if (json.message) message = json.message;
+        } catch (_) {}
+      } else if (err.message) {
+        message = err.message;
+      }
+      toast.error(message);
     }
   });
 
@@ -113,9 +127,12 @@ const addPaymentMutation = useMutation({
     return sum + (price * qty);
   }, 0) || 0;
 
-  const roomsSubtotal = Math.max(0, (Number(booking?.total_amount) || 0) - servicesSubtotal);
+  const roomsSubtotal = Math.max(0, (Number(booking?.subtotal ?? booking?.total_amount) || 0) - servicesSubtotal);
+  const taxRate = Number(booking?.tax_rate ?? 0);
+  const taxAmount = Number(booking?.tax_amount ?? ((roomsSubtotal + servicesSubtotal) * (taxRate / 100)));
+  const grandTotal = Number(booking?.grand_total ?? ((roomsSubtotal + servicesSubtotal) + taxAmount));
   const totalPaid = booking?.payments?.reduce((sum, p) => sum + Number(p.amount), 0) || 0;
-  const balanceDue = (booking?.total_amount || 0) - totalPaid;
+  const balanceDue = grandTotal - totalPaid;
 
 
   if (!booking) {
@@ -290,13 +307,19 @@ const addPaymentMutation = useMutation({
               <span className="text-sm font-medium text-zinc-900">{formatCurrency(servicesSubtotal)}</span>
             </div>
 
-            {/* 3. Total Booking Amount */}
-            <div className="flex justify-between items-center pt-2 border-t border-zinc-100">
-              <span className="text-sm font-semibold text-zinc-900">Total Booking Amount</span>
-              <span className="text-base font-bold text-zinc-900">{formatCurrency(booking.total_amount)}</span>
+            {/* 3. Tax */}
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-zinc-500">Tax ({taxRate.toFixed(1)}%)</span>
+              <span className="text-sm font-medium text-zinc-900">{formatCurrency(taxAmount)}</span>
             </div>
 
-            {/* 4. Remaining Balance */}
+            {/* 4. Total Booking Amount */}
+            <div className="flex justify-between items-center pt-2 border-t border-zinc-100">
+              <span className="text-sm font-semibold text-zinc-900">Total Booking Amount</span>
+              <span className="text-base font-bold text-zinc-900">{formatCurrency(grandTotal)}</span>
+            </div>
+
+            {/* 5. Remaining Balance */}
             <div className="flex justify-between items-center pt-2 border-t border-zinc-100">
               <span className="text-sm font-bold text-zinc-900">
                 {balanceDue < 0 ? 'Overpaid / Refund Due' : 'Remaining Balance'}
