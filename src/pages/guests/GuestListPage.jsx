@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Edit2, Trash2 } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Plus, Edit2, Trash2, Eye } from 'lucide-react';
 import { guestsApi } from '../../api/guests';
 import DataTable from '../../components/common/DataTable';
 import Button from '../../components/common/Button';
@@ -45,7 +46,14 @@ const GuestListPage = () => {
   const columns = [
     { 
       header: 'Name', 
-      render: (row) => <span className="font-medium">{row.first_name} {row.last_name}</span> 
+      render: (row) => (
+        <Link 
+          to={`/guests/${row.id}`} 
+          className="font-medium text-zinc-900 hover:text-zinc-600 hover:underline transition-colors cursor-pointer"
+        >
+          {row.first_name} {row.last_name}
+        </Link>
+      )
     },
     { header: 'Email', accessor: 'email' },
     { header: 'Phone', accessor: 'phone' },
@@ -56,10 +64,17 @@ const GuestListPage = () => {
       cellClassName: 'text-right',
       render: (row) => (
         <div className="flex items-center justify-end gap-2">
-          <button onClick={() => openForm(row)} className="cursor-pointer p-1.5 text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 rounded-md">
+          <Link 
+            to={`/guests/${row.id}`}
+            title="View Guest Details"
+            className="cursor-pointer p-1.5 text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 rounded-md transition-colors"
+          >
+            <Eye className="w-4 h-4" />
+          </Link>
+          <button onClick={() => openForm(row)} title="Edit Guest" className="cursor-pointer p-1.5 text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 rounded-md transition-colors">
             <Edit2 className="w-4 h-4" />
           </button>
-          <button onClick={() => { setGuestToDelete(row); setIsDeleteOpen(true); }} className="cursor-pointer p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-md">
+          <button onClick={() => { setGuestToDelete(row); setIsDeleteOpen(true); }} title="Delete Guest" className="cursor-pointer p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-md transition-colors">
             <Trash2 className="w-4 h-4" />
           </button>
         </div>

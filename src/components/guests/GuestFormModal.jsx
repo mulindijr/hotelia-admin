@@ -18,7 +18,7 @@ const guestSchema = z.object({
   address: z.string().optional(),
 });
 
-const GuestFormModal = ({ isOpen, onClose, guest }) => {
+const GuestFormModal = ({ isOpen, onClose, guest, onSuccess }) => {
   const queryClient = useQueryClient();
   const isEditing = !!guest;
 
@@ -46,8 +46,13 @@ const GuestFormModal = ({ isOpen, onClose, guest }) => {
 
   const mutation = useMutation({
     mutationFn: (data) => isEditing ? guestsApi.updateGuest(guest.id, data) : guestsApi.createGuest(data),
-    onSuccess: () => {
+    onSuccess: (response) => {
       queryClient.invalidateQueries(['guests']);
+      if (guest?.id) {
+        queryClient.invalidateQueries(['guest', guest.id.toString()]);
+        queryClient.invalidateQueries(['guest', Number(guest.id)]);
+      }
+      if (onSuccess) onSuccess(response);
       onClose();
     }
   });

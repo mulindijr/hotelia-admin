@@ -19,6 +19,7 @@ import RoomTypesPage from './pages/rooms/RoomTypesPage';
 import RoomsPage from './pages/rooms/RoomsPage';
 import AvailabilityMatrixPage from './pages/rooms/AvailabilityMatrixPage';
 import GuestListPage from './pages/guests/GuestListPage';
+import GuestDetailsPage from './pages/guests/GuestDetailsPage';
 
 // Phase 4 Pages
 import BookingListPage from './pages/bookings/BookingListPage';
@@ -86,6 +87,7 @@ function App() {
                 <Route path="/settings" element={<HotelSettingsPage />} />
                 <Route path="/services" element={<ServicesPage />} />
                 <Route path="/guests" element={<GuestListPage />} />
+                <Route path="/guests/:id" element={<GuestDetailsPage />} />
                 
                 {/* Rooms Sub-Routing */}
                 <Route path="/rooms" element={<RoomsPage />} />

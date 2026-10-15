@@ -27,7 +27,13 @@ export const guestsApi = {
   },
 
   getGuestBookings: async (id, options = {}) => {
-    const response = await api.get(buildUrl(`/guests/${id}/bookings`, options));
+    const params = new URLSearchParams();
+    if (options.hotel_id) {
+      params.append('hotel_id', options.hotel_id);
+    }
+    const queryString = params.toString();
+    const url = queryString ? `/guests/${id}/bookings?${queryString}` : `/guests/${id}/bookings`;
+    const response = await api.get(url);
     return response.data;
   }
 };
