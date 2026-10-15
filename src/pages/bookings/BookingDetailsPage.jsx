@@ -13,6 +13,7 @@ import ConfirmModal from '../../components/common/ConfirmModal';
 import toast from 'react-hot-toast';
 import AddPaymentModal from '../../components/bookings/AddPaymentModal';
 import AddServiceModal from '../../components/bookings/AddServiceModal';
+import InvoiceModal from '../../components/bookings/InvoiceModal';
 import EmptyState from '../../components/common/EmptyState';
 
 const BookingDetailsPage = () => {
@@ -24,6 +25,7 @@ const BookingDetailsPage = () => {
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [isServiceModalOpen, setIsServiceModalOpen] = useState(false);
+  const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: ['booking', activeHotelId, id],
@@ -50,9 +52,19 @@ const BookingDetailsPage = () => {
     }
   });
 
-  const downloadInvoiceMutation = useMutation({
-    mutationFn: () => bookingsApi.downloadInvoice(activeHotelId, id),
-    onSuccess: async (response) => {
+  const invoiceMutation = useMutation({
+    mutationFn: async ({ emailToGuest }) => {
+      if (emailToGuest) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        const guestEmail = booking?.guest?.email?.trim();
+        if (!guestEmail || !emailRegex.test(guestEmail)) {
+          throw new Error('Guest does not have a valid email address configured.');
+        }
+
+        await bookingsApi.sendInvoiceEmail(activeHotelId, id);
+      }
+
+      const response = await bookingsApi.downloadInvoice(activeHotelId, id);
       if (response.data instanceof Blob && response.data.type === 'application/json') {
         const text = await response.data.text();
         const json = JSON.parse(text);
@@ -60,16 +72,26 @@ const BookingDetailsPage = () => {
       }
 
       downloadBlob(response.data, `invoice-${booking?.booking_reference || id}.pdf`);
-      toast.success('Invoice downloaded successfully');
+      return { emailed: emailToGuest, email: booking?.guest?.email };
+    },
+    onSuccess: ({ emailed, email }) => {
+      if (emailed) {
+        toast.success(`Invoice emailed to ${email} and downloaded successfully`);
+      } else {
+        toast.success('Invoice downloaded successfully');
+      }
+      setIsInvoiceModalOpen(false);
     },
     onError: async (err) => {
-      let message = 'Failed to download invoice';
+      let message = 'Failed to process invoice';
       if (err.response?.data instanceof Blob) {
         try {
           const text = await err.response.data.text();
           const json = JSON.parse(text);
           if (json.message) message = json.message;
         } catch (_) {}
+      } else if (err.response?.data?.message) {
+        message = err.response.data.message;
       } else if (err.message) {
         message = err.message;
       }
@@ -176,7 +198,12 @@ const addPaymentMutation = useMutation({
               Cancel
             </Button>
           )}
-          <Button variant="secondary" onClick={() => downloadInvoiceMutation.mutate()} isLoading={downloadInvoiceMutation.isPending}>
+          <Button 
+            variant="secondary" 
+            onClick={() => setIsInvoiceModalOpen(true)} 
+            isLoading={invoiceMutation.isPending}
+            disabled={invoiceMutation.isPending}
+          >
             <Download className="w-4 h-4 mr-2" />
             Invoice
           </Button>
@@ -417,6 +444,14 @@ const addPaymentMutation = useMutation({
           });
         }}
         isLoading={addServiceMutation.isPending}
+      />
+
+      <InvoiceModal
+        isOpen={isInvoiceModalOpen}
+        onClose={() => setIsInvoiceModalOpen(false)}
+        booking={booking}
+        onConfirm={({ emailToGuest }) => invoiceMutation.mutate({ emailToGuest })}
+        isLoading={invoiceMutation.isPending}
       />
     </div>
   );

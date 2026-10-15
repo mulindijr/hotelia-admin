@@ -36,6 +36,11 @@ export const bookingsApi = {
     return response;
   },
 
+  sendInvoiceEmail: async (hotelId, id) => {
+    const response = await api.post(`/hotels/${hotelId}/bookings/${id}/invoice/send`);
+    return response.data;
+  },
+
   cancelBooking: async (hotelId, id) => {
     const response = await api.post(`/hotels/${hotelId}/bookings/${id}/cancel`);
     return response.data;
