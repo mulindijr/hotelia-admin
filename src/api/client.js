@@ -83,8 +83,11 @@ export default api;
 /**
  * Helper to download a blob response as a file
  */
-export const downloadBlob = (blob, filename) => {
-  const url = window.URL.createObjectURL(new Blob([blob]));
+export const downloadBlob = (blob, filename, mimeType = 'application/pdf') => {
+  const fileBlob = blob instanceof Blob 
+    ? (blob.type ? blob : new Blob([blob], { type: mimeType }))
+    : new Blob([blob], { type: mimeType });
+  const url = window.URL.createObjectURL(fileBlob);
   const link = document.createElement('a');
   link.href = url;
   link.setAttribute('download', filename);

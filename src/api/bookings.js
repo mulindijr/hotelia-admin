@@ -30,10 +30,10 @@ export const bookingsApi = {
     return response.data;
   },
   downloadInvoice: async (hotelId, id) => {
-    const response = await api.get(`/hotels/${hotelId}/bookings/${id}/invoice/download`, {
+    const response = await api.get(`/hotels/${hotelId}/bookings/${id}/invoice/pdf`, {
       responseType: 'blob'
     });
-    return response.data;
+    return response;
   },
 
   cancelBooking: async (hotelId, id) => {
@@ -53,8 +53,13 @@ export const bookingsApi = {
 
   // Invoices & Payments related to bookings
   getBookingInvoice: async (hotelId, bookingId) => {
-    const response = await api.get(`/hotels/${hotelId}/bookings/${bookingId}/invoice`, {
-      responseType: 'blob' // Handling PDF download
+    const response = await api.get(`/hotels/${hotelId}/bookings/${bookingId}/invoice`);
+    return response.data;
+  },
+
+  downloadBookingInvoicePdf: async (hotelId, bookingId) => {
+    const response = await api.get(`/hotels/${hotelId}/bookings/${bookingId}/invoice/pdf`, {
+      responseType: 'blob'
     });
     return response;
   }
