@@ -14,6 +14,7 @@ import toast from 'react-hot-toast';
 import AddPaymentModal from '../../components/bookings/AddPaymentModal';
 import AddServiceModal from '../../components/bookings/AddServiceModal';
 import InvoiceModal from '../../components/bookings/InvoiceModal';
+import BookingDetailsSkeleton from '../../components/bookings/BookingDetailsSkeleton';
 import EmptyState from '../../components/common/EmptyState';
 
 const BookingDetailsPage = () => {
@@ -27,7 +28,7 @@ const BookingDetailsPage = () => {
   const [isServiceModalOpen, setIsServiceModalOpen] = useState(false);
   const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ['booking', activeHotelId, id],
     queryFn: () => bookingsApi.getBooking(activeHotelId, id, { include: 'guest,rooms,payments,services' }),
     enabled: !!activeHotelId && !!id,
@@ -138,11 +139,56 @@ const addPaymentMutation = useMutation({
     return <EmptyState />;
   }
 
-  if (isLoading) {
-    return <div className="flex justify-center p-12 text-zinc-500">Loading booking details...</div>;
+  // Show skeleton loader on initial fetch while booking data is loading
+  if (isLoading && !booking) {
+    return <BookingDetailsSkeleton />;
   }
 
-  
+  // Gracefully handle query errors with retry option
+  if (isError && !booking) {
+    return (
+      <div className="max-w-xl mx-auto my-12 p-8 bg-white border border-zinc-200 rounded-xl shadow-sm text-center space-y-4 animate-in fade-in duration-200">
+        <div className="w-12 h-12 bg-rose-50 text-rose-600 rounded-full flex items-center justify-center mx-auto">
+          <AlertCircle className="w-6 h-6" />
+        </div>
+        <h2 className="text-lg font-semibold text-zinc-900">Unable to Load Booking</h2>
+        <p className="text-sm text-zinc-500 max-w-md mx-auto">
+          {error?.response?.data?.message || error?.message || 'An error occurred while fetching booking details. Please check your connection and try again.'}
+        </p>
+        <div className="flex items-center justify-center gap-3 pt-3">
+          <Button variant="secondary" onClick={() => navigate('/bookings')}>
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Bookings
+          </Button>
+          <Button onClick={() => refetch()}>
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Retry
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!booking) {
+    return (
+      <div className="max-w-xl mx-auto my-12 p-8 bg-white border border-zinc-200 rounded-xl shadow-sm text-center space-y-4 animate-in fade-in duration-200">
+        <div className="w-12 h-12 bg-zinc-100 text-zinc-500 rounded-full flex items-center justify-center mx-auto">
+          <AlertCircle className="w-6 h-6" />
+        </div>
+        <h2 className="text-lg font-semibold text-zinc-900">Booking Not Found</h2>
+        <p className="text-sm text-zinc-500 max-w-md mx-auto">
+          The booking you are looking for does not exist or may have been deleted.
+        </p>
+        <div className="flex items-center justify-center gap-3 pt-3">
+          <Button variant="secondary" onClick={() => navigate('/bookings')}>
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Bookings
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   const servicesSubtotal = booking?.services?.reduce((sum, service) => {
     const qty = Number(service.pivot?.quantity ?? 1);
     const price = Number(service.pivot?.price ?? service.price ?? 0);
@@ -155,11 +201,6 @@ const addPaymentMutation = useMutation({
   const grandTotal = Number(booking?.grand_total ?? ((roomsSubtotal + servicesSubtotal) + taxAmount));
   const totalPaid = booking?.payments?.reduce((sum, p) => sum + Number(p.amount), 0) || 0;
   const balanceDue = grandTotal - totalPaid;
-
-
-  if (!booking) {
-    return <div className="p-6 text-red-500">Booking not found.</div>;
-  }
 
   return (
     <div className="space-y-6 max-w-5xl">
