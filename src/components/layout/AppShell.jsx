@@ -10,16 +10,12 @@ const AppShell = () => {
   const { user, isLoading: isLoadingAuth } = useAuth();
   const { isLoading: isLoadingHotels } = useHotel();
 
-  if (isLoadingAuth || isLoadingHotels) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-zinc-50">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-zinc-900"></div>
-      </div>
-    );
+  if (!isLoadingAuth && !user) {
+    return <Navigate to="/login" replace />;
   }
 
-  if (!user) {
-    return <Navigate to="/login" replace />;
+  if (isLoadingAuth && !user) {
+    return null;
   }
 
   return (

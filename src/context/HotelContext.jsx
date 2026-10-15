@@ -7,8 +7,15 @@ const HotelContext = createContext();
 export const HotelProvider = ({ children }) => {
   const { user } = useAuth();
   const [hotels, setHotels] = useState([]);
-  const [activeHotelId, setActiveHotelId] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [activeHotelId, setActiveHotelId] = useState(() => {
+    try {
+      const stored = localStorage.getItem('active_hotel_id');
+      return stored ? parseInt(stored) : null;
+    } catch {
+      return null;
+    }
+  });
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     if (user) {

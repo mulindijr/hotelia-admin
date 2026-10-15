@@ -5,9 +5,26 @@ import { useNavigate } from 'react-router-dom';
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [permissions, setPermissions] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [user, setUser] = useState(() => {
+    try {
+      const token = localStorage.getItem('hotelia_token');
+      const stored = localStorage.getItem('hotelia_user');
+      return token && stored ? JSON.parse(stored) : null;
+    } catch {
+      return null;
+    }
+  });
+  const [permissions, setPermissions] = useState(() => {
+    try {
+      const stored = localStorage.getItem('hotelia_permissions');
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [isLoading, setIsLoading] = useState(() => {
+    return Boolean(localStorage.getItem('hotelia_token') && !localStorage.getItem('hotelia_user'));
+  });
   const navigate = useNavigate();
 
   useEffect(() => {
