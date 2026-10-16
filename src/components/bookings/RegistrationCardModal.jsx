@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { Printer, X, Building2, ShieldCheck, Calendar, BedDouble, User, CreditCard } from 'lucide-react';
 import { useHotel } from '../../context/HotelContext';
 import { useCurrency } from '../../hooks/useCurrency';
@@ -8,6 +8,24 @@ const RegistrationCardModal = ({ isOpen, onClose, booking }) => {
   const { activeHotel } = useHotel();
   const { formatCurrency } = useCurrency();
   const printRef = useRef(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    document.body.style.overflow = 'hidden';
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = 'unset';
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen, onClose]);
 
   if (!isOpen || !booking) return null;
 
@@ -28,7 +46,7 @@ const RegistrationCardModal = ({ isOpen, onClose, booking }) => {
   const balanceDue = Math.max(0, grandTotal - totalPaid);
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-4" onClick={onClose}>
       {/* Print Stylesheet */}
       <style>{`
         @media print {
@@ -55,7 +73,7 @@ const RegistrationCardModal = ({ isOpen, onClose, booking }) => {
         }
       `}</style>
 
-      <div className="relative w-full max-w-3xl bg-white rounded-2xl shadow-2xl overflow-hidden border border-zinc-200 animate-in fade-in zoom-in-95 duration-200 max-h-[92vh] flex flex-col">
+      <div className="relative w-full max-w-3xl bg-white rounded-2xl shadow-2xl overflow-hidden border border-zinc-200 animate-in fade-in zoom-in-95 duration-200 max-h-[92vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
         {/* Modal Toolbar (hidden during print) */}
         <div className="no-print flex items-center justify-between px-6 py-4 bg-zinc-900 text-white border-b border-zinc-800">
           <div className="flex items-center gap-2.5">
