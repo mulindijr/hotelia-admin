@@ -99,60 +99,6 @@ const GuestDetailsPage = () => {
     setSearchQuery('');
   }, [activeHotelId, id]);
 
-  if (!activeHotelId) {
-    return <EmptyState />;
-  }
-
-  // Show skeleton on initial fetch
-  if ((isLoadingGuest && !guest) || (isLoadingBookings && bookings.length === 0 && !guest)) {
-    return <GuestDetailsSkeleton />;
-  }
-
-  // Gracefully handle profile query errors
-  if (isErrorGuest && !guest) {
-    return (
-      <div className="max-w-xl mx-auto my-12 p-8 bg-white border border-zinc-200 rounded-xl shadow-sm text-center space-y-4 animate-in fade-in duration-200">
-        <div className="w-12 h-12 bg-rose-50 text-rose-600 rounded-full flex items-center justify-center mx-auto">
-          <AlertCircle className="w-6 h-6" />
-        </div>
-        <h2 className="text-lg font-semibold text-zinc-900">Unable to Load Guest Profile</h2>
-        <p className="text-sm text-zinc-500 max-w-md mx-auto">
-          {guestError?.response?.data?.message || guestError?.message || 'An error occurred while fetching guest information. Please check your connection and try again.'}
-        </p>
-        <div className="flex items-center justify-center gap-3 pt-3">
-          <Button variant="secondary" onClick={() => navigate('/guests')}>
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Guests
-          </Button>
-          <Button onClick={() => refetchGuest()}>
-            <RefreshCw className="w-4 h-4 mr-2" />
-            Retry
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
-  if (!guest) {
-    return (
-      <div className="max-w-xl mx-auto my-12 p-8 bg-white border border-zinc-200 rounded-xl shadow-sm text-center space-y-4 animate-in fade-in duration-200">
-        <div className="w-12 h-12 bg-zinc-100 text-zinc-500 rounded-full flex items-center justify-center mx-auto">
-          <User className="w-6 h-6" />
-        </div>
-        <h2 className="text-lg font-semibold text-zinc-900">Guest Not Found</h2>
-        <p className="text-sm text-zinc-500 max-w-md mx-auto">
-          The requested guest profile does not exist or may have been removed.
-        </p>
-        <div className="flex items-center justify-center gap-3 pt-3">
-          <Button variant="secondary" onClick={() => navigate('/guests')}>
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Guests
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
   // 3. Compute Financial and Stay Summary strictly for the active hotel
   const hotelBookings = bookings.filter(b => !activeHotelId || Number(b.hotel_id) === Number(activeHotelId));
   const otherHotelBookingsCount = bookings.filter(b => activeHotelId && Number(b.hotel_id) !== Number(activeHotelId)).length;
@@ -251,6 +197,60 @@ const GuestDetailsPage = () => {
     }
     return items;
   };
+
+  if (!activeHotelId) {
+    return <EmptyState />;
+  }
+
+  // Show skeleton on initial fetch
+  if ((isLoadingGuest && !guest) || (isLoadingBookings && bookings.length === 0 && !guest)) {
+    return <GuestDetailsSkeleton />;
+  }
+
+  // Gracefully handle profile query errors
+  if (isErrorGuest && !guest) {
+    return (
+      <div className="max-w-xl mx-auto my-12 p-8 bg-white border border-zinc-200 rounded-xl shadow-sm text-center space-y-4 animate-in fade-in duration-200">
+        <div className="w-12 h-12 bg-rose-50 text-rose-600 rounded-full flex items-center justify-center mx-auto">
+          <AlertCircle className="w-6 h-6" />
+        </div>
+        <h2 className="text-lg font-semibold text-zinc-900">Unable to Load Guest Profile</h2>
+        <p className="text-sm text-zinc-500 max-w-md mx-auto">
+          {guestError?.response?.data?.message || guestError?.message || 'An error occurred while fetching guest information. Please check your connection and try again.'}
+        </p>
+        <div className="flex items-center justify-center gap-3 pt-3">
+          <Button variant="secondary" onClick={() => navigate('/guests')}>
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Guests
+          </Button>
+          <Button onClick={() => refetchGuest()}>
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Retry
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!guest) {
+    return (
+      <div className="max-w-xl mx-auto my-12 p-8 bg-white border border-zinc-200 rounded-xl shadow-sm text-center space-y-4 animate-in fade-in duration-200">
+        <div className="w-12 h-12 bg-zinc-100 text-zinc-500 rounded-full flex items-center justify-center mx-auto">
+          <User className="w-6 h-6" />
+        </div>
+        <h2 className="text-lg font-semibold text-zinc-900">Guest Not Found</h2>
+        <p className="text-sm text-zinc-500 max-w-md mx-auto">
+          The requested guest profile does not exist or may have been removed.
+        </p>
+        <div className="flex items-center justify-center gap-3 pt-3">
+          <Button variant="secondary" onClick={() => navigate('/guests')}>
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Guests
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 max-w-7xl animate-in fade-in duration-200">
