@@ -3,8 +3,6 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
   ArrowLeft, 
-  Edit2, 
-  Ban, 
   Download, 
   Plus, 
   CreditCard, 
@@ -34,6 +32,8 @@ import AddServiceModal from '../../components/bookings/AddServiceModal';
 import InvoiceModal from '../../components/bookings/InvoiceModal';
 import BookingDetailsSkeleton from '../../components/bookings/BookingDetailsSkeleton';
 import EmptyState from '../../components/common/EmptyState';
+import BookingLifecycleTimeline from '../../components/bookings/BookingLifecycleTimeline';
+import FolioSettlementBanner from '../../components/bookings/FolioSettlementBanner';
 
 const BookingDetailsPage = () => {
   const { id } = useParams();
@@ -383,6 +383,22 @@ const BookingDetailsPage = () => {
         </div>
       )}
 
+      {/* Reservation Activity Lifecycle Timeline */}
+      <BookingLifecycleTimeline booking={booking} />
+
+      {/* Folio Settlement & Quick Balance Collection Banner */}
+      <FolioSettlementBanner
+        grandTotal={grandTotal}
+        totalPaid={totalPaid}
+        balanceDue={balanceDue}
+        roomsSubtotal={roomsSubtotal}
+        servicesSubtotal={servicesSubtotal}
+        taxAmount={taxAmount}
+        paymentsCount={booking.payments?.filter(p => !p.status || p.status === 'completed').length || 0}
+        onCollectBalance={() => setIsPaymentModalOpen(true)}
+        onViewInvoice={() => setIsInvoiceModalOpen(true)}
+      />
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card title="Guest Details" className="col-span-1">
           <div className="space-y-4">
@@ -567,17 +583,15 @@ const BookingDetailsPage = () => {
           <div>
             <div className="flex items-center justify-between mb-3">
               <h4 className="text-sm font-semibold text-zinc-900">Payment History</h4>
-              {balanceDue > 0 && (
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => setIsPaymentModalOpen(true)}
-                  className="gap-1.5 border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50 text-zinc-800 font-medium shadow-xs"
-                >
-                  <CreditCard className="w-3.5 h-3.5 text-zinc-600" />
-                  Log Payment
-                </Button>
-              )}
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setIsPaymentModalOpen(true)}
+                className="gap-1.5 border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50 text-zinc-800 font-medium shadow-xs"
+              >
+                <CreditCard className="w-3.5 h-3.5 text-zinc-600" />
+                Log Payment
+              </Button>
             </div>
             {booking.payments && booking.payments.length > 0 ? (
               <div className="overflow-hidden rounded-lg border border-zinc-200">
