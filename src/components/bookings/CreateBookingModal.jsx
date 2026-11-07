@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { differenceInDays } from 'date-fns';
-import { UserPlus, UserCheck, Calendar, CreditCard, Key, CheckCircle, ShieldCheck } from 'lucide-react';
+import { UserCheck, Calendar, CreditCard, Key } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { useHotel } from '../../context/HotelContext';
 import { useCurrency } from '../../hooks/useCurrency';
@@ -46,7 +46,7 @@ const wizardSchema = z.object({
   }
 });
 
-const CreateBookingModal = ({ isOpen, onClose, initialGuest = null }) => {
+const CreateBookingModal = ({ isOpen, onClose, initialGuest = null, initialValues = null }) => {
   const { activeHotelId } = useHotel();
   const { formatCurrency } = useCurrency();
   const queryClient = useQueryClient();
@@ -65,7 +65,7 @@ const CreateBookingModal = ({ isOpen, onClose, initialGuest = null }) => {
     enabled: isOpen && !!activeHotelId,
   });
 
-  const { register, handleSubmit, control, watch, setValue, reset, trigger, getValues, setError, clearErrors, formState: { errors } } = useForm({
+  const { register, handleSubmit, watch, setValue, reset, trigger, getValues, setError, clearErrors, formState: { errors } } = useForm({
     resolver: zodResolver(wizardSchema),
     defaultValues: {
       guestType: 'existing',
@@ -78,7 +78,7 @@ const CreateBookingModal = ({ isOpen, onClose, initialGuest = null }) => {
 
   const guestType = watch('guestType');
 
-  // Reset wizard on close / open with initialGuest support
+  // Reset wizard on close / open with initialGuest and initialValues support
   useEffect(() => {
     if (!isOpen) {
       setTimeout(() => {
@@ -86,11 +86,11 @@ const CreateBookingModal = ({ isOpen, onClose, initialGuest = null }) => {
         reset();
       }, 300);
     } else {
-      // Set default dates
+      // Set default dates or use preselected values
       const today = new Date().toISOString().split('T')[0];
       const tmrw = new Date(Date.now() + 86400000).toISOString().split('T')[0];
-      setValue('check_in_date', today);
-      setValue('check_out_date', tmrw);
+      setValue('check_in_date', initialValues?.check_in_date || today);
+      setValue('check_out_date', initialValues?.check_out_date || tmrw);
 
       if (initialGuest?.id) {
         setValue('guestType', 'existing');
@@ -100,7 +100,20 @@ const CreateBookingModal = ({ isOpen, onClose, initialGuest = null }) => {
         setStep(1);
       }
     }
-  }, [isOpen, initialGuest, reset, setValue]);
+  }, [isOpen, initialGuest, initialValues, reset, setValue]);
+
+  // Auto-select room when initialValues has a room_type_id and roomsData is loaded
+  useEffect(() => {
+    if (isOpen && initialValues?.room_type_id && roomsData?.data?.length) {
+      const targetTypeId = Number(initialValues.room_type_id);
+      const matchingRoom = roomsData.data.find(
+        r => Number(r.room_type_id) === targetTypeId || Number(r.room_type?.id) === targetTypeId
+      );
+      if (matchingRoom) {
+        setValue('room_id', matchingRoom.id);
+      }
+    }
+  }, [isOpen, initialValues, roomsData, setValue]);
 
   const mutation = useMutation({
     mutationFn: (payload) => bookingsApi.createBooking(activeHotelId, payload),
@@ -109,6 +122,7 @@ const CreateBookingModal = ({ isOpen, onClose, initialGuest = null }) => {
       queryClient.invalidateQueries(['rooms', activeHotelId]);
       queryClient.invalidateQueries(['roomsList', activeHotelId]);
       queryClient.invalidateQueries(['guestsList']);
+      queryClient.invalidateQueries(['availability', activeHotelId]);
       if (initialGuest?.id) {
         queryClient.invalidateQueries(['guest-bookings', initialGuest.id.toString(), activeHotelId]);
         queryClient.invalidateQueries(['guest-bookings', Number(initialGuest.id), activeHotelId]);
@@ -158,7 +172,7 @@ const CreateBookingModal = ({ isOpen, onClose, initialGuest = null }) => {
           setError('guest.last_name', { type: 'manual', message: 'Last name is required' });
           isValid = false;
         }
-        if (!vals.guest?.email || !/^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/.test(vals.guest.email)) {
+        if (!vals.guest?.email || !/^[\w.-]+@([\w-]+\.)+[\w-]{2,4}$/.test(vals.guest.email)) {
           setError('guest.email', { type: 'manual', message: 'Valid email is required' });
           isValid = false;
         }
@@ -315,6 +329,13 @@ const CreateBookingModal = ({ isOpen, onClose, initialGuest = null }) => {
               </div>
             )}
 
+            {initialValues?.room_type_name && (
+              <div className="flex items-center justify-between px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-xs">
+                <span>Preselected Room Type: <strong className="text-zinc-900">{initialValues.room_type_name}</strong></span>
+                <span className="text-zinc-500">Dates: {watch('check_in_date')} &rarr; {watch('check_out_date')}</span>
+              </div>
+            )}
+
             <Select 
               label="Select Available Room *" 
               options={[{ label: 'Select Room...', value: '' }, ...roomOptions]} 
@@ -352,7 +373,7 @@ const CreateBookingModal = ({ isOpen, onClose, initialGuest = null }) => {
               </div>
               <div className="flex justify-between items-center text-sm font-bold pt-3 border-t border-zinc-100">
                 <span className="text-zinc-900">Estimated Total</span>
-                <span className="text-indigo-600">{formatCurrency(estimatedTotal)}</span>
+                <span className="text-zinc-900">{formatCurrency(estimatedTotal)}</span>
               </div>
             </div>
 
