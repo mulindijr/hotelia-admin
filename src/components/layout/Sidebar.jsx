@@ -1,5 +1,5 @@
-import React from 'react';
-import { NavLink } from 'react-router-dom';
+import React, { useState, useEffect, useMemo } from 'react';
+import { NavLink, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard,
   ShoppingBag, 
@@ -7,14 +7,15 @@ import {
   Bed, 
   CalendarCheck, 
   Users, 
-  CreditCard,
-  Settings,
-  ShieldCheck,
-  Hotel,
-  TrendingUp,
-  Sparkles,
-  Wrench,
-  Key
+  CreditCard, 
+  Settings, 
+  ShieldCheck, 
+  Hotel, 
+  TrendingUp, 
+  Wrench, 
+  Tags,
+  ChevronDown,
+  FileText
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
@@ -37,23 +38,124 @@ const navigationGroups = [
   {
     title: 'Property',
     items: [
-      { name: 'Rooms & Grid', path: '/rooms', icon: Bed, permission: 'view rooms' },
-      { name: 'Services & Extras', path: '/services', icon: ShoppingBag, permission: 'view rooms' },
-      { name: 'Housekeeping', path: '/housekeeping', icon: Sparkles, permission: 'view housekeeping' },
-      { name: 'Maintenance', path: '/maintenance', icon: Wrench, permission: 'view maintenance' },
+      { 
+        name: 'Rooms & Inventory', 
+        icon: Bed, 
+        permission: 'view rooms',
+        children: [
+          { name: 'Rooms List', path: '/rooms' },
+          { name: 'Availability Grid', path: '/availability' },
+          { name: 'Room Types', path: '/room-types' },
+          { name: 'Amenities', path: '/amenities' },
+        ]
+      },
+      { name: 'Services & Extras', path: '/services', icon: ShoppingBag, permission: 'view services' },
+      { 
+        name: 'Rates & Pricing', 
+        icon: Tags, 
+        permission: 'view rate plans',
+        children: [
+          { name: 'Rate Plans', path: '/rate-plans' },
+          { name: 'Pricing Rules', path: '/pricing-rules' },
+        ]
+      },
+      { 
+        name: 'Operations', 
+        icon: Wrench, 
+        children: [
+          { name: 'Housekeeping', path: '/housekeeping', permission: 'view housekeeping' },
+          { name: 'Maintenance', path: '/maintenance', permission: 'view maintenance' },
+        ]
+      },
     ]
   },
   {
     title: 'Administration',
     items: [
       { name: 'Hotels', path: '/hotels', icon: Building2, permission: 'view hotels' },
-      { name: 'Staff & Users', path: '/users', icon: ShieldCheck, permission: 'view users' },
-      { name: 'Roles & Permissions', path: '/roles', icon: Key, permission: 'manage roles' },
+      { 
+        name: 'Staff Management', 
+        icon: ShieldCheck, 
+        children: [
+          { name: 'Staff List', path: '/users', permission: 'view users' },
+          { name: 'Roles', path: '/roles', permission: 'update users' },
+        ]
+      },
       { name: 'Settings', path: '/settings', icon: Settings, permission: 'update hotels' },
-      { name: 'Audit Logs', path: '/audit-logs', icon: ShieldCheck, permission: 'view activity logs' },
+      { name: 'Audit Logs', path: '/audit-logs', icon: FileText, permission: 'view activity logs' },
     ]
   }
 ];
+
+const SidebarDropdownItem = ({ item, setMobileOpen }) => {
+  const { hasPermission } = useAuth();
+  const location = useLocation();
+
+  const visibleChildren = useMemo(() => {
+    return (item.children || []).filter(
+      child => !child.permission || hasPermission(child.permission)
+    );
+  }, [item.children, hasPermission]);
+
+  const isAnyChildActive = visibleChildren.some(
+    child => location.pathname === child.path || location.pathname.startsWith(child.path + '/')
+  );
+  const [isOpen, setIsOpen] = useState(isAnyChildActive);
+
+  useEffect(() => {
+    if (isAnyChildActive) {
+      setIsOpen(true);
+    }
+  }, [isAnyChildActive]);
+
+  if (visibleChildren.length === 0) return null;
+
+  return (
+    <li>
+      <button
+        type="button"
+        onClick={() => setIsOpen(prev => !prev)}
+        className={`
+          w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer select-none
+          ${isAnyChildActive 
+            ? 'bg-zinc-100 text-zinc-900 font-semibold' 
+            : 'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900'}
+        `}
+      >
+        <div className="flex items-center gap-3">
+          <item.icon className="w-5 h-5 text-zinc-500" />
+          <span>{item.name}</span>
+        </div>
+        <ChevronDown 
+          className={`w-4 h-4 text-zinc-400 transition-transform duration-200 ${
+            isOpen ? 'rotate-180 text-zinc-700' : ''
+          }`} 
+        />
+      </button>
+
+      {isOpen && (
+        <ul className="mt-1 ml-4 pl-3 border-l border-zinc-200 space-y-1 py-1">
+          {visibleChildren.map((child) => (
+            <li key={child.name}>
+              <NavLink
+                to={child.path}
+                onClick={() => setMobileOpen && setMobileOpen(false)}
+                className={({ isActive }) => `
+                  block px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors
+                  ${isActive 
+                    ? 'bg-zinc-900 text-white shadow-xs font-semibold' 
+                    : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100'}
+                `}
+              >
+                {child.name}
+              </NavLink>
+            </li>
+          ))}
+        </ul>
+      )}
+    </li>
+  );
+};
 
 const Sidebar = ({ isOpen, setOpen }) => {
   const { hasPermission } = useAuth();
@@ -87,6 +189,9 @@ const Sidebar = ({ isOpen, setOpen }) => {
           {navigationGroups.map((group) => {
             // Filter items in this group based on permissions
             const filteredItems = group.items.filter(item => {
+              if (item.children && item.children.length > 0) {
+                return item.children.some(child => !child.permission || hasPermission(child.permission));
+              }
               if (!item.permission) return true;
               return hasPermission(item.permission);
             });
@@ -100,22 +205,35 @@ const Sidebar = ({ isOpen, setOpen }) => {
                   {group.title}
                 </h3>
                 <ul className="space-y-1">
-                  {filteredItems.map((item) => (
-                    <li key={item.name}>
-                      <NavLink
-                        to={item.path}
-                        className={({ isActive }) => `
-                          flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors
-                          ${isActive 
-                            ? 'bg-zinc-900 text-white' 
-                            : 'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900'}
-                        `}
-                      >
-                        <item.icon className="w-5 h-5" />
-                        {item.name}
-                      </NavLink>
-                    </li>
-                  ))}
+                  {filteredItems.map((item) => {
+                    if (item.children && item.children.length > 0) {
+                      return (
+                        <SidebarDropdownItem
+                          key={item.name}
+                          item={item}
+                          setMobileOpen={setOpen}
+                        />
+                      );
+                    }
+
+                    return (
+                      <li key={item.name}>
+                        <NavLink
+                          to={item.path}
+                          onClick={() => setOpen(false)}
+                          className={({ isActive }) => `
+                            flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors
+                            ${isActive 
+                              ? 'bg-zinc-900 text-white' 
+                              : 'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900'}
+                          `}
+                        >
+                          <item.icon className="w-5 h-5" />
+                          {item.name}
+                        </NavLink>
+                      </li>
+                    );
+                  })}
                 </ul>
               </div>
             );

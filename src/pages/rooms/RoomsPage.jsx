@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Plus, Edit2, Trash2 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { roomsApi } from '../../api/rooms';
 import { useHotel } from '../../context/HotelContext';
 import DataTable from '../../components/common/DataTable';
@@ -14,7 +15,6 @@ import Select from '../../components/common/Select';
 import ConfirmModal from '../../components/common/ConfirmModal';
 import Badge from '../../components/common/Badge';
 import EmptyState from '../../components/common/EmptyState';
-import RoomsNavigation from '../../components/rooms/RoomsNavigation';
 
 const roomSchema = z.object({
   room_number: z.string().min(1, 'Room number is required'),
@@ -96,9 +96,25 @@ const RoomsPage = () => {
   const deleteMutation = useMutation({
     mutationFn: (id) => roomsApi.deleteRoom(activeHotelId, id),
     onSuccess: () => {
-      queryClient.invalidateQueries(['rooms', activeHotelId]);
+      queryClient.invalidateQueries({ queryKey: ['rooms', activeHotelId] });
       setIsDeleteOpen(false);
-    }
+      toast.success('Room deleted');
+    },
+    onError: (err) => toast.error(err.response?.data?.message || 'Failed to delete room'),
+  });
+
+  const bulkStatusMutation = useMutation({
+    mutationFn: async (newStatus) => {
+      await Promise.all(
+        selectedRows.map((roomId) => roomsApi.updateRoom(activeHotelId, roomId, { status: newStatus }))
+      );
+    },
+    onSuccess: (_, newStatus) => {
+      queryClient.invalidateQueries({ queryKey: ['rooms', activeHotelId] });
+      toast.success(`Updated ${selectedRows.length} rooms to ${newStatus}`);
+      setSelectedRows([]);
+    },
+    onError: () => toast.error('Failed to update some rooms'),
   });
 
   const columns = [
@@ -172,7 +188,6 @@ const RoomsPage = () => {
           <h1 className="text-2xl font-bold text-zinc-900">Rooms</h1>
           <p className="mt-1 text-sm text-zinc-500">Manage individual physical rooms.</p>
         </div>
-      <RoomsNavigation />
         <Button onClick={() => openForm(null)}>
           <Plus className="w-4 h-4 mr-2" /> 
           Add Room
@@ -189,6 +204,32 @@ const RoomsPage = () => {
         enableSelection={true}
         selectedRowIds={selectedRows}
         onSelectionChange={setSelectedRows}
+        bulkActions={
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs text-zinc-400 mr-1 hidden sm:inline">Mark as:</span>
+            <button
+              onClick={() => bulkStatusMutation.mutate('available')}
+              disabled={bulkStatusMutation.isPending}
+              className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs font-medium cursor-pointer disabled:opacity-50"
+            >
+              Available
+            </button>
+            <button
+              onClick={() => bulkStatusMutation.mutate('cleaning')}
+              disabled={bulkStatusMutation.isPending}
+              className="px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-medium cursor-pointer disabled:opacity-50"
+            >
+              Cleaning
+            </button>
+            <button
+              onClick={() => bulkStatusMutation.mutate('maintenance')}
+              disabled={bulkStatusMutation.isPending}
+              className="px-2.5 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded text-xs font-medium cursor-pointer disabled:opacity-50"
+            >
+              Maintenance
+            </button>
+          </div>
+        }
         pagination={{
           current_page: data?.meta?.current_page,
           from: data?.meta?.from,
