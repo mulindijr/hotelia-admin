@@ -224,3 +224,4 @@ const HotelSwitcher = () => {
 };
 
 export default HotelSwitcher;
+
