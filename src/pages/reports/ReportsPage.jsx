@@ -22,13 +22,13 @@ const ReportsPage = () => {
   // Fetch Reports
   const { data: revenueData, isLoading: isLoadingRevenue } = useQuery({
     queryKey: ['reports_revenue', activeHotelId, startDate, endDate],
-    queryFn: () => reportsApi.getRevenueReport(activeHotelId, { filters: { start_date: startDate, end_date: endDate } }),
+    queryFn: () => reportsApi.getRevenueReport(activeHotelId, { start_date: startDate, end_date: endDate }),
     enabled: !!activeHotelId && activeTab === 'revenue',
   });
 
   const { data: occupancyData, isLoading: isLoadingOccupancy } = useQuery({
-    queryKey: ['reports_dashboard', activeHotelId, startDate, endDate], // Dashboard endpoint has occupancy trend
-    queryFn: () => reportsApi.getDashboardStats(activeHotelId, { filters: { start_date: startDate, end_date: endDate } }),
+    queryKey: ['reports_dashboard', activeHotelId, startDate, endDate],
+    queryFn: () => reportsApi.getDashboardStats(activeHotelId, { start_date: startDate, end_date: endDate }),
     enabled: !!activeHotelId && activeTab === 'occupancy',
   });
 
@@ -36,34 +36,75 @@ const ReportsPage = () => {
     return <EmptyState />;
   }
 
-  // Raw data mapping
-  const revenueTableData = revenueData?.data?.daily_revenue || [];
-  const occupancyTableData = occupancyData?.data?.occupancy_trend || [];
+  const rawRevenue = revenueData?.data || {};
+  const rawOccupancy = occupancyData?.data || {};
+
+  // Build table rows supporting both daily arrays and ReportService summary payloads
+  const revenueTableData = rawRevenue.daily_revenue?.length
+    ? rawRevenue.daily_revenue.map((row, idx) => ({
+        id: idx + 1,
+        label: new Date(row.date).toLocaleDateString(),
+        category: 'Daily Revenue',
+        value: formatCurrency(row.amount),
+        rawValue: row.amount,
+      }))
+    : rawRevenue.payment_methods
+    ? [
+        { id: 'invoiced', label: 'Total Invoiced', category: 'Billing Summary', value: formatCurrency(rawRevenue.total_invoiced || 0), rawValue: rawRevenue.total_invoiced || 0 },
+        { id: 'collected', label: 'Payments Collected', category: 'Billing Summary', value: formatCurrency(rawRevenue.payments_collected || 0), rawValue: rawRevenue.payments_collected || 0 },
+        { id: 'room_rev', label: 'Room Revenue', category: 'Revenue Stream', value: formatCurrency(rawRevenue.room_revenue || 0), rawValue: rawRevenue.room_revenue || 0 },
+        { id: 'adr', label: 'Average Daily Rate (ADR)', category: 'KPI', value: formatCurrency(rawRevenue.adr || 0), rawValue: rawRevenue.adr || 0 },
+        { id: 'revpar', label: 'Revenue Per Available Room (RevPAR)', category: 'KPI', value: formatCurrency(rawRevenue.revpar || 0), rawValue: rawRevenue.revpar || 0 },
+        { id: 'mpesa', label: 'Mobile Money (M-Pesa)', category: 'Payment Method', value: formatCurrency(rawRevenue.payment_methods.mpesa || 0), rawValue: rawRevenue.payment_methods.mpesa || 0 },
+        { id: 'card', label: 'Credit / Debit Card', category: 'Payment Method', value: formatCurrency(rawRevenue.payment_methods.card || 0), rawValue: rawRevenue.payment_methods.card || 0 },
+        { id: 'cash', label: 'Cash', category: 'Payment Method', value: formatCurrency(rawRevenue.payment_methods.cash || 0), rawValue: rawRevenue.payment_methods.cash || 0 },
+        { id: 'bank_transfer', label: 'Bank Transfer', category: 'Payment Method', value: formatCurrency(rawRevenue.payment_methods.bank_transfer || 0), rawValue: rawRevenue.payment_methods.bank_transfer || 0 },
+      ]
+    : [];
+
+  const occupancyTableData = rawOccupancy.occupancy_trend?.length
+    ? rawOccupancy.occupancy_trend.map((row, idx) => ({
+        id: idx + 1,
+        label: new Date(row.date).toLocaleDateString(),
+        category: 'Daily Occupancy',
+        value: `${row.rate}%`,
+        rawValue: `${row.rate}%`,
+      }))
+    : rawOccupancy.room_statuses
+    ? [
+        { id: 'total_rooms', label: 'Total Rooms', category: 'Inventory', value: `${rawOccupancy.total_rooms ?? 0}`, rawValue: rawOccupancy.total_rooms ?? 0 },
+        { id: 'occupied_rooms', label: 'Occupied Rooms', category: 'Inventory', value: `${rawOccupancy.occupied_rooms ?? 0}`, rawValue: rawOccupancy.occupied_rooms ?? 0 },
+        { id: 'occupancy_rate', label: 'Occupancy Rate', category: 'KPI', value: `${rawOccupancy.occupancy_rate ?? 0}%`, rawValue: `${rawOccupancy.occupancy_rate ?? 0}%` },
+        { id: 'available', label: 'Available Rooms', category: 'Room Status', value: `${rawOccupancy.room_statuses.available ?? 0}`, rawValue: rawOccupancy.room_statuses.available ?? 0 },
+        { id: 'cleaning', label: 'Rooms in Cleaning', category: 'Room Status', value: `${rawOccupancy.room_statuses.cleaning ?? 0}`, rawValue: rawOccupancy.room_statuses.cleaning ?? 0 },
+        { id: 'maintenance', label: 'Rooms in Maintenance', category: 'Room Status', value: `${rawOccupancy.room_statuses.maintenance ?? 0}`, rawValue: rawOccupancy.room_statuses.maintenance ?? 0 },
+        { id: 'active_bookings', label: 'Active Bookings', category: 'Front Desk', value: `${rawOccupancy.active_bookings_count ?? 0}`, rawValue: rawOccupancy.active_bookings_count ?? 0 },
+        { id: 'hk_pending', label: 'Pending Housekeeping Tasks', category: 'Operations', value: `${rawOccupancy.housekeeping_tasks?.pending ?? 0}`, rawValue: rawOccupancy.housekeeping_tasks?.pending ?? 0 },
+        { id: 'maint_active', label: 'Active Maintenance Requests', category: 'Operations', value: `${rawOccupancy.active_maintenance_requests ?? 0}`, rawValue: rawOccupancy.active_maintenance_requests ?? 0 },
+      ]
+    : [];
 
   const revenueColumns = [
-    { header: 'Date', render: (row) => new Date(row.date).toLocaleDateString() },
-    { header: 'Revenue Amount', render: (row) => formatCurrency(row.amount) }
+    { header: 'Metric / Date', accessor: 'label', className: 'font-medium text-zinc-900' },
+    { header: 'Category', accessor: 'category' },
+    { header: 'Amount', accessor: 'value', className: 'text-right', cellClassName: 'text-right font-semibold text-zinc-900' }
   ];
 
   const occupancyColumns = [
-    { header: 'Date', render: (row) => new Date(row.date).toLocaleDateString() },
-    { header: 'Occupancy Rate', render: (row) => `${row.rate}%` }
+    { header: 'Metric / Date', accessor: 'label', className: 'font-medium text-zinc-900' },
+    { header: 'Category', accessor: 'category' },
+    { header: 'Value', accessor: 'value', className: 'text-right', cellClassName: 'text-right font-semibold text-zinc-900' }
   ];
 
   const handleExportCSV = () => {
     const dataToExport = activeTab === 'revenue' ? revenueTableData : occupancyTableData;
     if (!dataToExport || dataToExport.length === 0) return;
 
-    // Build CSV string
-    const headers = activeTab === 'revenue' ? ['Date', 'Revenue'] : ['Date', 'Occupancy Rate (%)'];
+    const headers = ['Metric / Date', 'Category', 'Value'];
     const csvRows = [headers.join(',')];
 
     dataToExport.forEach(row => {
-      if (activeTab === 'revenue') {
-        csvRows.push(`${row.date},${row.amount}`);
-      } else {
-        csvRows.push(`${row.date},${row.rate}`);
-      }
+      csvRows.push(`"${row.label}","${row.category}","${row.rawValue}"`);
     });
 
     const csvString = csvRows.join('\n');

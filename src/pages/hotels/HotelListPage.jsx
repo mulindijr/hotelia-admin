@@ -13,7 +13,6 @@ const HotelListPage = () => {
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(15);
   const [search, setSearch] = useState('');
-  const [selectedRows, setSelectedRows] = useState([]);
   
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [editingHotel, setEditingHotel] = useState(null);
@@ -126,9 +125,6 @@ const HotelListPage = () => {
         onSearchChange={(val) => { setSearch(val); setPage(1); }}
         perPage={perPage}
         onPerPageChange={(val) => { setPerPage(val); setPage(1); }}
-        enableSelection={true}
-        selectedRowIds={selectedRows}
-        onSelectionChange={setSelectedRows}
         pagination={{
           current_page: data?.meta?.current_page,
           from: data?.meta?.from,

@@ -58,7 +58,7 @@ const RoomTypeGalleryModal = ({ isOpen, onClose, roomType }) => {
       isOpen={isOpen}
       onClose={onClose}
       title={roomType ? `Gallery: ${roomType.name}` : 'Room Gallery'}
-      size="lg"
+      maxWidth="max-w-2xl"
       footer={
         <div className="flex justify-between w-full">
           <div>

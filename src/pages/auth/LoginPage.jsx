@@ -19,6 +19,7 @@ const LoginPage = () => {
   const { login } = useAuth();
   const [errorMsg, setErrorMsg] = useState('');
   const [isLocked, setIsLocked] = useState(false);
+  const [lockoutSeconds, setLockoutSeconds] = useState(15 * 60);
 
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm({
     resolver: zodResolver(loginSchema),
@@ -33,6 +34,10 @@ const LoginPage = () => {
       }
     } catch (error) {
       if (error.response?.status === 423) {
+        const remaining = Number(error.response?.data?.seconds_remaining);
+        if (remaining > 0) {
+          setLockoutSeconds(remaining);
+        }
         setIsLocked(true);
       } else if (error.response?.status === 422 || error.response?.status === 401) {
         setErrorMsg('Invalid email or password');
@@ -61,7 +66,7 @@ const LoginPage = () => {
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white py-8 px-4 shadow-sm border border-zinc-200 sm:rounded-xl sm:px-10">
           {isLocked ? (
-            <AccountLockoutBanner />
+            <AccountLockoutBanner initialSeconds={lockoutSeconds} />
           ) : (
             <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
               {errorMsg && (
@@ -99,9 +104,9 @@ const LoginPage = () => {
                 </div>
 
                 <div className="text-sm">
-                  <a href="/forgot-password" className="font-medium text-zinc-600 hover:text-zinc-900">
+                  <Link to="/forgot-password" className="font-medium text-zinc-600 hover:text-zinc-900">
                     Forgot your password?
-                  </a>
+                  </Link>
                 </div>
               </div>
 

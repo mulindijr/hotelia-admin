@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Users, BedDouble, CalendarCheck, DollarSign, Building2 } from 'lucide-react';
+import { Users, BedDouble, CalendarCheck, DollarSign, Building2, Wrench, Sparkles } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { reportsApi } from '../../api/reports';
 import { useHotel } from '../../context/HotelContext';
 import { useCurrency } from '../../hooks/useCurrency';
@@ -10,17 +11,21 @@ import {
   Line,
   AreaChart,
   Area,
+  BarChart,
+  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
-  ResponsiveContainer
+  ResponsiveContainer,
+  Cell
 } from 'recharts';
 import { format, subDays } from 'date-fns';
 
 const DashboardPage = () => {
   const { activeHotelId, isLoading: isLoadingHotels } = useHotel();
   const { currencyCode, formatCurrency } = useCurrency();
+  const navigate = useNavigate();
   
   // Default to last 30 days for dashboard view
   const [dateRange] = useState({
@@ -30,13 +35,13 @@ const DashboardPage = () => {
 
   const { data: dashboardData, isLoading: isLoadingDashboard } = useQuery({
     queryKey: ['reports_dashboard', activeHotelId, dateRange],
-    queryFn: () => reportsApi.getDashboardStats(activeHotelId, { filters: dateRange }),
+    queryFn: () => reportsApi.getDashboardStats(activeHotelId, dateRange),
     enabled: !!activeHotelId,
   });
 
   const { data: revenueData, isLoading: isLoadingRevenue } = useQuery({
     queryKey: ['reports_revenue', activeHotelId, dateRange],
-    queryFn: () => reportsApi.getRevenueReport(activeHotelId, { filters: dateRange }),
+    queryFn: () => reportsApi.getRevenueReport(activeHotelId, dateRange),
     enabled: !!activeHotelId,
   });
   if (isLoadingHotels) {
@@ -60,7 +65,7 @@ const DashboardPage = () => {
         </p>
         <div className="pt-4">
           <button 
-            onClick={() => window.location.href = '/hotels'}
+            onClick={() => navigate('/hotels')}
             className="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-zinc-900 hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-zinc-900 transition-colors"
           >
             Create Your First Hotel
@@ -70,27 +75,71 @@ const DashboardPage = () => {
     );
   }
 
-  // Expecting backend to return metrics in dashboardData.data.metrics or similar
-  // Let's adapt based on a standard assumption, and fallback to 0
-  const stats = dashboardData?.data?.metrics || {
-    today_check_ins: 0,
-    today_check_outs: 0,
-    occupancy_rate: 0,
-    available_rooms: 0,
-    revenue_mtd: 0
-  };
+  const rawDashboard = dashboardData?.data || {};
+  const rawRevenue = revenueData?.data || {};
+  const metrics = rawDashboard.metrics || {};
+
+  const hasLegacyMetrics = Boolean(rawDashboard.metrics);
 
   const statCards = [
-    { label: 'Check-Ins Today', value: stats.today_check_ins, icon: CalendarCheck, color: 'text-blue-600', bg: 'bg-blue-50' },
-    { label: 'Check-Outs Today', value: stats.today_check_outs, icon: CalendarCheck, color: 'text-orange-600', bg: 'bg-orange-50' },
-    { label: 'Occupancy Rate', value: `${stats.occupancy_rate}%`, icon: BedDouble, color: 'text-indigo-600', bg: 'bg-indigo-50' },
-    { label: 'Available Rooms', value: stats.available_rooms, icon: Users, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-    { label: 'Revenue (MTD)', value: formatCurrency(stats.revenue_mtd), icon: DollarSign, color: 'text-zinc-900', bg: 'bg-zinc-100' },
+    {
+      label: hasLegacyMetrics ? 'Check-Ins Today' : 'Active Bookings',
+      value: metrics.today_check_ins ?? rawDashboard.active_bookings_count ?? 0,
+      icon: CalendarCheck,
+      color: 'text-blue-600',
+      bg: 'bg-blue-50',
+    },
+    {
+      label: hasLegacyMetrics ? 'Check-Outs Today' : 'Occupied Rooms',
+      value: metrics.today_check_outs ?? rawDashboard.occupied_rooms ?? 0,
+      icon: BedDouble,
+      color: 'text-orange-600',
+      bg: 'bg-orange-50',
+    },
+    {
+      label: 'Occupancy Rate',
+      value: `${metrics.occupancy_rate ?? rawDashboard.occupancy_rate ?? 0}%`,
+      icon: BedDouble,
+      color: 'text-indigo-600',
+      bg: 'bg-indigo-50',
+    },
+    {
+      label: 'Available Rooms',
+      value: metrics.available_rooms ?? rawDashboard.room_statuses?.available ?? 0,
+      icon: Users,
+      color: 'text-emerald-600',
+      bg: 'bg-emerald-50',
+    },
+    {
+      label: 'Revenue (30d)',
+      value: formatCurrency(metrics.revenue_mtd ?? rawRevenue.payments_collected ?? rawRevenue.total_invoiced ?? 0),
+      icon: DollarSign,
+      color: 'text-zinc-900',
+      bg: 'bg-zinc-100',
+    },
   ];
 
-  // Prepare chart data (fallback to empty arrays if undefined)
-  const occupancyChartData = dashboardData?.data?.occupancy_trend || [];
-  const revenueChartData = revenueData?.data?.daily_revenue || [];
+  // Prepare chart data (support both time-series arrays and summary breakdowns from ReportService)
+  const occupancyChartData = rawDashboard.occupancy_trend || [];
+  const revenueChartData = rawRevenue.daily_revenue || [];
+
+  const roomStatusChartData = rawDashboard.room_statuses
+    ? [
+        { name: 'Available', count: Number(rawDashboard.room_statuses.available || 0), fill: '#10b981' },
+        { name: 'Occupied', count: Number(rawDashboard.room_statuses.occupied || 0), fill: '#f59e0b' },
+        { name: 'Cleaning', count: Number(rawDashboard.room_statuses.cleaning || 0), fill: '#3b82f6' },
+        { name: 'Maintenance', count: Number(rawDashboard.room_statuses.maintenance || 0), fill: '#ef4444' },
+      ]
+    : [];
+
+  const paymentMethodChartData = rawRevenue.payment_methods
+    ? [
+        { name: 'M-Pesa', amount: Number(rawRevenue.payment_methods.mpesa || 0) },
+        { name: 'Card', amount: Number(rawRevenue.payment_methods.card || 0) },
+        { name: 'Cash', amount: Number(rawRevenue.payment_methods.cash || 0) },
+        { name: 'Bank Transfer', amount: Number(rawRevenue.payment_methods.bank_transfer || 0) },
+      ]
+    : [];
 
   return (
     <div className="space-y-6">
@@ -109,7 +158,7 @@ const DashboardPage = () => {
               </div>
               <h3 className="text-sm font-medium text-zinc-500 line-clamp-1">{stat.label}</h3>
             </div>
-            {isLoadingDashboard ? (
+            {isLoadingDashboard || (idx === 4 && isLoadingRevenue) ? (
               <div className="h-8 bg-zinc-100 rounded animate-pulse w-1/2"></div>
             ) : (
               <p className="text-2xl font-bold text-zinc-900">{stat.value}</p>
@@ -118,10 +167,43 @@ const DashboardPage = () => {
         ))}
       </div>
 
+      {/* Operations Snapshot Strip */}
+      {!isLoadingDashboard && (rawDashboard.housekeeping_tasks || rawDashboard.active_maintenance_requests !== undefined) && (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="bg-white px-4 py-3.5 rounded-xl border border-zinc-200 flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <Sparkles className="w-4 h-4 text-zinc-500" />
+              <span className="text-sm font-medium text-zinc-700">Pending Housekeeping</span>
+            </div>
+            <span className="text-sm font-bold text-zinc-900">
+              {rawDashboard.housekeeping_tasks?.pending ?? 0} tasks
+            </span>
+          </div>
+          <div className="bg-white px-4 py-3.5 rounded-xl border border-zinc-200 flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <Sparkles className="w-4 h-4 text-blue-600" />
+              <span className="text-sm font-medium text-zinc-700">In-Progress Cleaning</span>
+            </div>
+            <span className="text-sm font-bold text-zinc-900">
+              {rawDashboard.housekeeping_tasks?.in_progress ?? 0} tasks
+            </span>
+          </div>
+          <div className="bg-white px-4 py-3.5 rounded-xl border border-zinc-200 flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <Wrench className="w-4 h-4 text-amber-600" />
+              <span className="text-sm font-medium text-zinc-700">Open Maintenance Issues</span>
+            </div>
+            <span className="text-sm font-bold text-zinc-900">
+              {rawDashboard.active_maintenance_requests ?? 0} active
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
         
-        <Card title="Occupancy Trend (30 Days)">
+        <Card title={occupancyChartData.length > 0 ? "Occupancy Trend (30 Days)" : "Current Room Status Breakdown"}>
           <div className="h-72 mt-4">
             {isLoadingDashboard ? (
               <div className="w-full h-full bg-zinc-50 animate-pulse rounded-lg flex items-center justify-center text-zinc-400">Loading chart...</div>
@@ -145,6 +227,23 @@ const DashboardPage = () => {
                   <Area type="monotone" dataKey="rate" stroke="#4f46e5" strokeWidth={3} fillOpacity={1} fill="url(#colorOccupancy)" />
                 </AreaChart>
               </ResponsiveContainer>
+            ) : roomStatusChartData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={roomStatusChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e4e4e7" />
+                  <XAxis dataKey="name" tick={{ fontSize: 12, fill: '#71717a' }} axisLine={false} tickLine={false} />
+                  <YAxis allowDecimals={false} tick={{ fontSize: 12, fill: '#71717a' }} axisLine={false} tickLine={false} />
+                  <Tooltip
+                    contentStyle={{ borderRadius: '8px', border: '1px solid #e4e4e7', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                    formatter={(value) => [`${value} rooms`, 'Count']}
+                  />
+                  <Bar dataKey="count" radius={[6, 6, 0, 0]}>
+                    {roomStatusChartData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.fill} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
             ) : (
               <div className="w-full h-full flex items-center justify-center text-sm text-zinc-400 border border-dashed border-zinc-200 rounded-lg">
                 No occupancy data available for this period.
@@ -153,7 +252,7 @@ const DashboardPage = () => {
           </div>
         </Card>
 
-        <Card title="Revenue Trend (30 Days)">
+        <Card title={revenueChartData.length > 0 ? "Revenue Trend (30 Days)" : "Revenue by Payment Method (30 Days)"}>
           <div className="h-72 mt-4">
             {isLoadingRevenue ? (
               <div className="w-full h-full bg-zinc-50 animate-pulse rounded-lg flex items-center justify-center text-zinc-400">Loading chart...</div>
@@ -170,6 +269,19 @@ const DashboardPage = () => {
                   />
                   <Line type="monotone" dataKey="amount" stroke="#18181b" strokeWidth={3} dot={false} activeDot={{ r: 6, fill: '#18181b' }} />
                 </LineChart>
+              </ResponsiveContainer>
+            ) : paymentMethodChartData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={paymentMethodChartData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e4e4e7" />
+                  <XAxis dataKey="name" tick={{ fontSize: 12, fill: '#71717a' }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 12, fill: '#71717a' }} axisLine={false} tickLine={false} tickFormatter={(val) => `${currencyCode} ${val}`} />
+                  <Tooltip
+                    contentStyle={{ borderRadius: '8px', border: '1px solid #e4e4e7', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                    formatter={(value) => [formatCurrency(value), 'Collected']}
+                  />
+                  <Bar dataKey="amount" fill="#18181b" radius={[6, 6, 0, 0]} />
+                </BarChart>
               </ResponsiveContainer>
             ) : (
               <div className="w-full h-full flex items-center justify-center text-sm text-zinc-400 border border-dashed border-zinc-200 rounded-lg">

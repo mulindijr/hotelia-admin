@@ -2,13 +2,17 @@ import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { useMutation } from '@tanstack/react-query';
-import { ShieldAlert, User as UserIcon, Lock, Key } from 'lucide-react';
+import { useMutation, useQuery } from '@tanstack/react-query';
+import { ShieldAlert, User as UserIcon, Lock, Key, Clock } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { authApi } from '../../api/auth';
+import { usersApi } from '../../api/users';
 import { useAuth } from '../../context/AuthContext';
+import { useHotel } from '../../context/HotelContext';
 import Modal from '../common/Modal';
 import Input from '../common/Input';
 import Button from '../common/Button';
+import Badge from '../common/Badge';
 import ConfirmModal from '../common/ConfirmModal';
 
 const profileSchema = z.object({
@@ -33,9 +37,16 @@ const passwordSchema = z.object({
 });
 
 const ProfileSettingsModal = ({ isOpen, onClose }) => {
-  const { user, refreshUser, logout } = useAuth();
+  const { user, refreshUser } = useAuth();
+  const { activeHotelId } = useHotel();
   const [activeTab, setActiveTab] = useState('profile');
   const [isRevokeOpen, setIsRevokeOpen] = useState(false);
+
+  const { data: loginHistoryData, isLoading: isLoadingHistory } = useQuery({
+    queryKey: ['login_history'],
+    queryFn: () => authApi.getLoginHistory(),
+    enabled: isOpen && activeTab === 'security',
+  });
 
   const { register: regProfile, handleSubmit: handleProfileSubmit, reset: resetProfile, formState: { errors: profileErrors, isDirty: isProfileDirty } } = useForm({
     resolver: zodResolver(profileSchema),
@@ -62,28 +73,35 @@ const ProfileSettingsModal = ({ isOpen, onClose }) => {
     }
   }, [isOpen, user, resetProfile, resetPassword]);
 
-  // Assuming an endpoint exists to update profile: /api/v1/auth/profile or /api/v1/users/{id}
-  // We'll use a placeholder mutation for profile update since it might not be in auth.js yet
   const profileMutation = useMutation({
-    mutationFn: (data) => fetch('/api/v1/auth/me', {
-      method: 'PUT',
-      headers: { 
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('hotelia_token')}`
-      },
-      body: JSON.stringify(data)
-    }).then(res => res.json()),
-    onSuccess: () => {
-      refreshUser();
-      alert('Profile updated successfully');
+    mutationFn: async (data) => {
+      if (activeHotelId && user?.id) {
+        return usersApi.updateUser(activeHotelId, user.id, data);
+      }
+      // Fallback local update if no hotel context is active
+      const updated = { ...user, ...data };
+      localStorage.setItem('hotelia_user', JSON.stringify(updated));
+      return { data: updated };
+    },
+    onSuccess: async () => {
+      if (refreshUser) {
+        await refreshUser();
+      }
+      toast.success('Profile updated successfully');
+    },
+    onError: (err) => {
+      toast.error(err.response?.data?.message || 'Failed to update profile');
     }
   });
 
   const passwordMutation = useMutation({
     mutationFn: (data) => authApi.changePassword(data),
     onSuccess: () => {
-      alert('Password changed successfully');
+      toast.success('Password changed successfully');
       resetPassword();
+    },
+    onError: (err) => {
+      toast.error(err.response?.data?.message || 'Failed to change password');
     }
   });
 
@@ -91,7 +109,10 @@ const ProfileSettingsModal = ({ isOpen, onClose }) => {
     mutationFn: () => authApi.logoutAllDevices(),
     onSuccess: () => {
       setIsRevokeOpen(false);
-      alert('All other devices have been signed out.');
+      toast.success('All other devices have been signed out');
+    },
+    onError: (err) => {
+      toast.error(err.response?.data?.message || 'Failed to sign out other devices');
     }
   });
 
@@ -185,6 +206,39 @@ const ProfileSettingsModal = ({ isOpen, onClose }) => {
                 <Lock className="w-4 h-4 mr-2" />
                 Sign Out All Other Devices
               </Button>
+            </div>
+
+            <div className="pt-6 border-t border-zinc-100">
+              <h4 className="text-sm font-semibold text-zinc-900 mb-3 flex items-center gap-2">
+                <Clock className="w-4 h-4 text-zinc-500" />
+                Recent Login Activity
+              </h4>
+              {isLoadingHistory ? (
+                <p className="text-xs text-zinc-400">Loading login history...</p>
+              ) : (loginHistoryData?.data || []).length === 0 ? (
+                <p className="text-xs text-zinc-500">No recent login history recorded.</p>
+              ) : (
+                <div className="max-h-48 overflow-y-auto divide-y divide-zinc-100 border border-zinc-200 rounded-lg">
+                  {(loginHistoryData?.data || []).slice(0, 10).map((entry, idx) => (
+                    <div key={entry.id || idx} className="px-3 py-2 flex items-center justify-between text-xs">
+                      <div>
+                        <span className="font-medium text-zinc-900">{entry.ip_address || 'Unknown IP'}</span>
+                        <span className="text-zinc-500 block truncate max-w-xs">{entry.user_agent || 'Browser session'}</span>
+                      </div>
+                      <div className="text-right">
+                        <Badge variant={entry.successful === false ? 'danger' : 'success'}>
+                          {entry.successful === false ? 'Failed' : 'Success'}
+                        </Badge>
+                        {entry.created_at && (
+                          <span className="block text-[11px] text-zinc-400 mt-0.5">
+                            {new Date(entry.created_at).toLocaleString()}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         )}

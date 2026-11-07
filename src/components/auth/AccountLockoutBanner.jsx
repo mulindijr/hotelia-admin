@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { AlertOctagon } from 'lucide-react';
 
-const AccountLockoutBanner = () => {
-  // Typical lockout is 15 minutes. In a real app we'd parse the 'Retry-After' header 
-  // or unlock_time from the API response. For this component, we simulate a 15-minute countdown.
-  const [timeLeft, setTimeLeft] = useState(15 * 60);
+const AccountLockoutBanner = ({ initialSeconds = 15 * 60 }) => {
+  const [timeLeft, setTimeLeft] = useState(initialSeconds);
+
+  useEffect(() => {
+    setTimeLeft(initialSeconds);
+  }, [initialSeconds]);
 
   useEffect(() => {
     if (timeLeft <= 0) return;

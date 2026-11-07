@@ -7,4 +7,9 @@ export const adminApi = {
     const response = await api.get(url);
     return response.data;
   },
+
+  unlockUser: async (userId) => {
+    const response = await api.post(`/admin/users/${userId}/unlock`);
+    return response.data;
+  },
 };

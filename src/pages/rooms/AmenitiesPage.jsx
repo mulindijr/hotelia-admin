@@ -12,7 +12,6 @@ import Modal from '../../components/common/Modal';
 import Input from '../../components/common/Input';
 import ConfirmModal from '../../components/common/ConfirmModal';
 import EmptyState from '../../components/common/EmptyState';
-import RoomsNavigation from '../../components/rooms/RoomsNavigation';
 
 const amenitySchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -25,7 +24,6 @@ const AmenitiesPage = () => {
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(15);
   const [search, setSearch] = useState('');
-  const [selectedRows, setSelectedRows] = useState([]);
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
@@ -33,8 +31,8 @@ const AmenitiesPage = () => {
   const [itemToDelete, setItemToDelete] = useState(null);
 
   const { data, isLoading } = useQuery({
-    queryKey: ['amenities', activeHotelId, page, perPage, search],
-    queryFn: () => roomsApi.getAmenities(activeHotelId, { 
+    queryKey: ['amenities', page, perPage, search],
+    queryFn: () => roomsApi.getAmenities({ 
       page, 
       perPage,
       filters: search ? { name: search } : undefined
@@ -58,18 +56,18 @@ const AmenitiesPage = () => {
 
   const saveMutation = useMutation({
     mutationFn: (formData) => editingItem 
-      ? roomsApi.updateAmenity(activeHotelId, editingItem.id, formData) 
-      : roomsApi.createAmenity(activeHotelId, formData),
+      ? roomsApi.updateAmenity(editingItem.id, formData) 
+      : roomsApi.createAmenity(formData),
     onSuccess: () => {
-      queryClient.invalidateQueries(['amenities', activeHotelId]);
+      queryClient.invalidateQueries({ queryKey: ['amenities'] });
       setIsFormOpen(false);
     }
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id) => roomsApi.deleteAmenity(activeHotelId, id),
+    mutationFn: (id) => roomsApi.deleteAmenity(id),
     onSuccess: () => {
-      queryClient.invalidateQueries(['amenities', activeHotelId]);
+      queryClient.invalidateQueries({ queryKey: ['amenities'] });
       setIsDeleteOpen(false);
     }
   });
@@ -105,7 +103,6 @@ const AmenitiesPage = () => {
           <h1 className="text-2xl font-bold text-zinc-900">Amenities</h1>
           <p className="mt-1 text-sm text-zinc-500">Manage property and room amenities.</p>
         </div>
-      <RoomsNavigation />
         <Button onClick={() => openForm(null)}><Plus className="w-4 h-4 mr-2" /> Add Amenity</Button>
       </div>
 
@@ -118,9 +115,6 @@ const AmenitiesPage = () => {
         onSearchChange={(val) => { setSearch(val); setPage(1); }}
         perPage={perPage}
         onPerPageChange={(val) => { setPerPage(val); setPage(1); }}
-        enableSelection={true}
-        selectedRowIds={selectedRows}
-        onSelectionChange={setSelectedRows}
         pagination={{
           current_page: data?.meta?.current_page,
           from: data?.meta?.from,

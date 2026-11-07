@@ -24,5 +24,10 @@ export const usersApi = {
   getRoles: async () => {
     const response = await api.get('/admin/roles');
     return response.data;
+  },
+
+  unlockUser: async (userId) => {
+    const response = await api.post(`/admin/users/${userId}/unlock`);
+    return response.data;
   }
 };

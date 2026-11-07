@@ -27,6 +27,23 @@ export const AuthProvider = ({ children }) => {
   });
   const navigate = useNavigate();
 
+  const logout = async () => {
+    try {
+      if (localStorage.getItem('hotelia_token')) {
+        await authApi.logout();
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      localStorage.removeItem('hotelia_token');
+      localStorage.removeItem('hotelia_user');
+      localStorage.removeItem('hotelia_permissions');
+      setUser(null);
+      setPermissions([]);
+      navigate('/login');
+    }
+  };
+
   useEffect(() => {
     const initAuth = async () => {
       const token = localStorage.getItem('hotelia_token');
@@ -77,21 +94,22 @@ export const AuthProvider = ({ children }) => {
     navigate('/');
   };
 
-  const logout = async () => {
+  const refreshUser = async () => {
     try {
-      if (localStorage.getItem('hotelia_token')) {
-        await authApi.logout();
+      const response = await authApi.me();
+      if (response.data?.user) {
+        const userData = response.data.user;
+        setUser(userData);
+        const userPerms = userData.permissions?.map(p => p.name) || [];
+        setPermissions(userPerms);
+        localStorage.setItem('hotelia_user', JSON.stringify(userData));
+        localStorage.setItem('hotelia_permissions', JSON.stringify(userPerms));
+        return userData;
       }
-    } catch (e) {
-      console.error(e);
-    } finally {
-      localStorage.removeItem('hotelia_token');
-      localStorage.removeItem('hotelia_user');
-      localStorage.removeItem('hotelia_permissions');
-      setUser(null);
-      setPermissions([]);
-      navigate('/login');
+    } catch (error) {
+      console.error('Failed to refresh user', error);
     }
+    return null;
   };
 
   const hasPermission = (permission) => {
@@ -103,7 +121,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, permissions, isLoading, login, logout, hasPermission }}>
+    <AuthContext.Provider value={{ user, permissions, isLoading, login, logout, refreshUser, hasPermission }}>
       {children}
     </AuthContext.Provider>
   );

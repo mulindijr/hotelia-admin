@@ -12,7 +12,7 @@ const HousekeepingFormModal = ({ isOpen, onClose, task }) => {
   const { activeHotelId } = useHotel();
   const queryClient = useQueryClient();
 
-  const { register, handleSubmit, reset, setValue } = useForm({
+  const { register, handleSubmit, reset } = useForm({
     defaultValues: {
       room_id: '',
       assigned_to: '',

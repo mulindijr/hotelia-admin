@@ -13,9 +13,9 @@ import Modal from '../../components/common/Modal';
 import Input from '../../components/common/Input';
 import ConfirmModal from '../../components/common/ConfirmModal';
 import EmptyState from '../../components/common/EmptyState';
-import RoomsNavigation from '../../components/rooms/RoomsNavigation';
 import RoomTypeGalleryModal from '../../components/rooms/RoomTypeGalleryModal';
 import { Image as ImageIcon } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 const roomTypeSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -23,7 +23,6 @@ const roomTypeSchema = z.object({
   capacity: z.coerce.number().min(1, 'Capacity must be at least 1'),
   beds: z.coerce.number().min(1, 'Beds must be at least 1'),
   base_price: z.coerce.number().min(0, 'Price cannot be negative'),
-  // amenity_ids: z.array(z.number()).optional(), // Handled separately or as part of form
 });
 
 const RoomTypesPage = () => {
@@ -33,7 +32,6 @@ const RoomTypesPage = () => {
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(15);
   const [search, setSearch] = useState('');
-  const [selectedRows, setSelectedRows] = useState([]);
   
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
@@ -52,12 +50,25 @@ const RoomTypesPage = () => {
     enabled: !!activeHotelId,
   });
 
+  const { data: amenitiesData } = useQuery({
+    queryKey: ['amenities', 'all'],
+    queryFn: () => roomsApi.getAmenities({ perPage: 100 }),
+    enabled: !!activeHotelId,
+  });
+  const allAmenities = amenitiesData?.data || [];
+  const [selectedAmenityIds, setSelectedAmenityIds] = useState([]);
+
+  const toggleAmenity = (id) => {
+    setSelectedAmenityIds(prev => prev.includes(id) ? prev.filter(a => a !== id) : [...prev, id]);
+  };
+
   const { register, handleSubmit, reset, formState: { errors } } = useForm({
     resolver: zodResolver(roomTypeSchema)
   });
 
   const openForm = (item = null) => {
     setEditingItem(item);
+    setSelectedAmenityIds(item?.amenities?.map(a => a.id) || []);
     if (item) {
       reset({ 
         name: item.name, 
@@ -73,13 +84,18 @@ const RoomTypesPage = () => {
   };
 
   const saveMutation = useMutation({
-    mutationFn: (formData) => editingItem 
-      ? roomsApi.updateRoomType(activeHotelId, editingItem.id, formData) 
-      : roomsApi.createRoomType(activeHotelId, formData),
+    mutationFn: (formData) => {
+      const payload = { ...formData, amenity_ids: selectedAmenityIds };
+      return editingItem 
+        ? roomsApi.updateRoomType(activeHotelId, editingItem.id, payload) 
+        : roomsApi.createRoomType(activeHotelId, payload);
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries(['roomTypes', activeHotelId]);
+      queryClient.invalidateQueries({ queryKey: ['roomTypes', activeHotelId] });
+      toast.success(editingItem ? 'Room type updated' : 'Room type created');
       setIsFormOpen(false);
-    }
+    },
+    onError: (err) => toast.error(err.response?.data?.message || 'Failed to save room type'),
   });
 
   const deleteMutation = useMutation({
@@ -97,6 +113,21 @@ const RoomTypesPage = () => {
     { 
       header: 'Base Price', 
       render: (row) => formatCurrency(row.base_price)
+    },
+    {
+      header: 'Amenities',
+      render: (row) => {
+        const list = row.amenities || [];
+        if (!list.length) return <span className="text-xs text-zinc-400">—</span>;
+        return (
+          <div className="flex flex-wrap gap-1 max-w-xs">
+            {list.slice(0, 3).map(a => (
+              <span key={a.id} className="px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-700 text-[11px]">{a.name}</span>
+            ))}
+            {list.length > 3 && <span className="text-[11px] text-zinc-500">+{list.length - 3}</span>}
+          </div>
+        );
+      }
     },
     {
       header: 'Actions',
@@ -129,7 +160,6 @@ const RoomTypesPage = () => {
           <h1 className="text-2xl font-bold text-zinc-900">Room Types</h1>
           <p className="mt-1 text-sm text-zinc-500">Manage categories and base pricing.</p>
         </div>
-      <RoomsNavigation />
         <Button onClick={() => openForm(null)}>
           <Plus className="w-4 h-4 mr-2" /> 
           Add Room Type
@@ -145,9 +175,6 @@ const RoomTypesPage = () => {
         onSearchChange={(val) => { setSearch(val); setPage(1); }}
         perPage={perPage}
         onPerPageChange={(val) => { setPerPage(val); setPage(1); }}
-        enableSelection={true}
-        selectedRowIds={selectedRows}
-        onSelectionChange={setSelectedRows}
         pagination={{
           current_page: data?.meta?.current_page,
           from: data?.meta?.from,
@@ -178,6 +205,26 @@ const RoomTypesPage = () => {
           </div>
           <Input label="Base Price" type="number" step="0.01" {...register('base_price')} error={errors.base_price?.message} />
           <Input label="Description" {...register('description')} error={errors.description?.message} />
+          <div>
+            <label className="block text-sm font-medium text-zinc-700 mb-1.5">Amenities</label>
+            {allAmenities.length === 0 ? (
+              <p className="text-xs text-zinc-500">No amenities defined yet. Add some on the Amenities tab.</p>
+            ) : (
+              <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto border border-zinc-200 rounded-lg p-2">
+                {allAmenities.map(a => (
+                  <label key={a.id} className="flex items-center gap-2 text-sm text-zinc-700 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={selectedAmenityIds.includes(a.id)}
+                      onChange={() => toggleAmenity(a.id)}
+                      className="rounded border-zinc-300 text-zinc-900 focus:ring-zinc-900"
+                    />
+                    {a.name}
+                  </label>
+                ))}
+              </div>
+            )}
+          </div>
         </form>
       </Modal>
 

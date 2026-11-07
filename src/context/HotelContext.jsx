@@ -17,16 +17,6 @@ export const HotelProvider = ({ children }) => {
   });
   const [isLoading, setIsLoading] = useState(false);
 
-  useEffect(() => {
-    if (user) {
-      loadHotels();
-    } else {
-      setHotels([]);
-      setActiveHotelId(null);
-      setIsLoading(false);
-    }
-  }, [user]);
-
   const loadHotels = async () => {
     try {
       setIsLoading(true);
@@ -48,6 +38,16 @@ export const HotelProvider = ({ children }) => {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (user) {
+      loadHotels();
+    } else {
+      setHotels([]);
+      setActiveHotelId(null);
+      setIsLoading(false);
+    }
+  }, [user]);
 
   const changeHotel = (id) => {
     setActiveHotelId(id);

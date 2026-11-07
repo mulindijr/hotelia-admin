@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
+import toast from 'react-hot-toast';
 import { usersApi } from '../../api/users';
 import { useHotel } from '../../context/HotelContext';
 import Modal from '../common/Modal';
@@ -10,11 +11,27 @@ import Input from '../common/Input';
 import Select from '../common/Select';
 import Button from '../common/Button';
 
+const DEFAULT_STAFF_ROLES = [
+  { label: 'Hotel Manager', value: 'hotel_manager' },
+  { label: 'Receptionist', value: 'receptionist' },
+  { label: 'Housekeeper', value: 'housekeeper' },
+  { label: 'Accountant', value: 'accountant' },
+];
+
+const formatRoleLabel = (name) =>
+  name
+    ? name
+        .replace(/_/g, ' ')
+        .replace(/\b\w/g, (c) => c.toUpperCase())
+    : '';
+
 const userSchema = z.object({
   first_name: z.string().min(1, 'First name is required'),
   last_name: z.string().min(1, 'Last name is required'),
   email: z.string().email('Invalid email'),
-  role_id: z.coerce.number().min(1, 'Role is required'),
+  phone: z.string().min(1, 'Phone number is required'),
+  role: z.string().min(1, 'Role is required'),
+  is_active: z.boolean().optional(),
   password: z.string().optional(),
 });
 
@@ -29,31 +46,45 @@ const UserFormModal = ({ isOpen, onClose, user }) => {
     enabled: isOpen && !!activeHotelId,
   });
 
-  const { register, handleSubmit, reset, formState: { errors } } = useForm({
+  const { register, handleSubmit, reset, setError, formState: { errors } } = useForm({
     resolver: zodResolver(userSchema),
   });
 
   useEffect(() => {
     if (isOpen) {
       if (user) {
+        const primaryRole =
+          (Array.isArray(user.roles) && (typeof user.roles[0] === 'string' ? user.roles[0] : user.roles[0]?.name)) ||
+          user.role?.name ||
+          (typeof user.role === 'string' ? user.role : '') ||
+          '';
         reset({
-          first_name: user.first_name,
-          last_name: user.last_name,
-          email: user.email,
-          role_id: user.role?.id || '',
+          first_name: user.first_name || '',
+          last_name: user.last_name || '',
+          email: user.email || '',
+          phone: user.phone || '',
+          role: primaryRole,
+          is_active: user.is_active ?? true,
           password: '',
         });
       } else {
-        reset({ first_name: '', last_name: '', email: '', role_id: '', password: '' });
+        reset({
+          first_name: '',
+          last_name: '',
+          email: '',
+          phone: '',
+          role: 'receptionist',
+          is_active: true,
+          password: '',
+        });
       }
     }
   }, [isOpen, user, reset]);
 
   const mutation = useMutation({
     mutationFn: (data) => {
-      // Don't send empty password when editing
       const payload = { ...data };
-      if (isEditing && !payload.password) {
+      if (!payload.password) {
         delete payload.password;
       }
       return isEditing 
@@ -61,12 +92,28 @@ const UserFormModal = ({ isOpen, onClose, user }) => {
         : usersApi.createUser(activeHotelId, payload);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['users', activeHotelId]);
+      queryClient.invalidateQueries({ queryKey: ['users', activeHotelId] });
+      toast.success(isEditing ? 'Staff member updated successfully' : 'Staff member created successfully');
       onClose();
+    },
+    onError: (error) => {
+      if (error.response?.status === 422 && error.response?.data?.errors) {
+        Object.entries(error.response.data.errors).forEach(([field, messages]) => {
+          setError(field, {
+            type: 'server',
+            message: Array.isArray(messages) ? messages[0] : messages,
+          });
+        });
+      } else {
+        toast.error(error.response?.data?.message || 'Failed to save staff user');
+      }
     }
   });
 
-  const roleOptions = rolesData?.data?.map(r => ({ label: r.name, value: r.id })) || [];
+  const apiRoles = rolesData?.data
+    ?.filter(r => r.name !== 'super_admin')
+    .map(r => ({ label: formatRoleLabel(r.name), value: r.name })) || [];
+  const roleOptions = apiRoles.length > 0 ? apiRoles : DEFAULT_STAFF_ROLES;
 
   return (
     <Modal
@@ -87,14 +134,17 @@ const UserFormModal = ({ isOpen, onClose, user }) => {
           <Input label="First Name" {...register('first_name')} error={errors.first_name?.message} />
           <Input label="Last Name" {...register('last_name')} error={errors.last_name?.message} />
         </div>
-        <Input label="Email" type="email" {...register('email')} error={errors.email?.message} />
+        <div className="grid grid-cols-2 gap-4">
+          <Input label="Email" type="email" {...register('email')} error={errors.email?.message} />
+          <Input label="Phone Number" placeholder="+254700000000" {...register('phone')} error={errors.phone?.message} />
+        </div>
         
         <Select 
           label="Role" 
           options={[{ label: 'Select Role', value: '' }, ...roleOptions]}
           disabled={isLoadingRoles}
-          {...register('role_id')} 
-          error={errors.role_id?.message} 
+          {...register('role')} 
+          error={errors.role?.message} 
         />
 
         <Input 

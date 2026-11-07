@@ -53,11 +53,7 @@ const HotelSettingsPage = () => {
   });
 
   if (!activeHotelId) {
-    return (
-      <div className="flex items-center justify-center h-64 border-2 border-dashed border-zinc-200 rounded-xl">
-        <p className="text-zinc-500">Please select an active hotel to manage settings.</p>
-      </div>
-    );
+    return <EmptyState />;
   }
 
   return (

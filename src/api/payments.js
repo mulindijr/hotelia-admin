@@ -12,8 +12,24 @@ export const paymentsApi = {
     return response.data;
   },
 
-  refundPayment: async (hotelId, paymentId, data) => {
-    const response = await api.post(`/hotels/${hotelId}/payments/${paymentId}/refund`, data);
+  updatePaymentStatus: async (hotelId, bookingId, paymentId, data) => {
+    // Expected data: { status: 'pending' | 'completed' | 'failed' | 'refunded', notes?: string }
+    const response = await api.post(`/hotels/${hotelId}/bookings/${bookingId}/payments/${paymentId}/status`, data);
     return response.data;
+  },
+
+  refundPayment: async (hotelId, bookingId, paymentId, notes = '') => {
+    const response = await api.post(`/hotels/${hotelId}/bookings/${bookingId}/payments/${paymentId}/status`, {
+      status: 'refunded',
+      ...(notes ? { notes } : {})
+    });
+    return response.data;
+  },
+
+  downloadReceipt: async (hotelId, paymentId) => {
+    const response = await api.get(`/hotels/${hotelId}/payments/${paymentId}/receipt/pdf`, {
+      responseType: 'blob'
+    });
+    return response;
   }
 };

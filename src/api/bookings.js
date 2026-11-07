@@ -24,6 +24,8 @@ export const bookingsApi = {
       response = await api.post(`/hotels/${hotelId}/bookings/${id}/check-out`);
     } else if (status === 'cancelled') {
       response = await api.post(`/hotels/${hotelId}/bookings/${id}/cancel`);
+    } else if (status === 'no_show') {
+      response = await api.post(`/hotels/${hotelId}/bookings/${id}/no-show`);
     } else {
       response = await api.patch(`/hotels/${hotelId}/bookings/${id}`, { status });
     }
@@ -64,6 +66,18 @@ export const bookingsApi = {
 
   downloadBookingInvoicePdf: async (hotelId, bookingId) => {
     const response = await api.get(`/hotels/${hotelId}/bookings/${bookingId}/invoice/pdf`, {
+      responseType: 'blob'
+    });
+    return response;
+  },
+
+  regenerateInvoice: async (hotelId, bookingId) => {
+    const response = await api.post(`/hotels/${hotelId}/bookings/${bookingId}/invoice/regenerate`);
+    return response.data;
+  },
+
+  downloadPaymentReceipt: async (hotelId, bookingId, paymentId) => {
+    const response = await api.get(`/hotels/${hotelId}/bookings/${bookingId}/payments/${paymentId}/receipt/pdf`, {
       responseType: 'blob'
     });
     return response;

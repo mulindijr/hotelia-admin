@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -8,7 +8,7 @@ import Modal from '../common/Modal';
 import Input from '../common/Input';
 import Button from '../common/Button';
 
-export const slugify = (text) =>
+const slugify = (text) =>
   text
     ? text
         .toString()
@@ -32,6 +32,16 @@ const hotelSchema = z.object({
 const HotelFormModal = ({ isOpen, onClose, hotel }) => {
   const queryClient = useQueryClient();
   const isEditing = !!hotel;
+  const [logoFile, setLogoFile] = useState(null);
+  const [logoPreview, setLogoPreview] = useState(null);
+  const [isActive, setIsActive] = useState(true);
+
+  const handleLogoChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setLogoFile(file);
+    setLogoPreview(URL.createObjectURL(file));
+  };
 
   const { 
     register, 
@@ -46,6 +56,9 @@ const HotelFormModal = ({ isOpen, onClose, hotel }) => {
 
   useEffect(() => {
     if (isOpen) {
+      setLogoFile(null);
+      setLogoPreview(hotel?.logo || null);
+      setIsActive(hotel ? hotel.is_active !== false : true);
       if (hotel) {
         reset({
           name: hotel.name || '',
@@ -83,12 +96,23 @@ const HotelFormModal = ({ isOpen, onClose, hotel }) => {
         ...(data.email ? { email: data.email } : {}),
         ...(data.phone ? { phone: data.phone } : {}),
         ...(data.description ? { description: data.description } : {}),
+        is_active: isActive,
       };
 
-      if (isEditing) {
-        return hotelsApi.updateHotel(hotel.id, payload);
+      // Use multipart when a logo file is attached
+      let body = payload;
+      if (logoFile) {
+        body = new FormData();
+        Object.entries(payload).forEach(([k, v]) => {
+          body.append(k, typeof v === 'boolean' ? (v ? '1' : '0') : v);
+        });
+        body.append('logo', logoFile);
       }
-      return hotelsApi.createHotel(payload);
+
+      if (isEditing) {
+        return hotelsApi.updateHotel(hotel.id, body);
+      }
+      return hotelsApi.createHotel(body);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['hotels'] });
@@ -179,6 +203,43 @@ const HotelFormModal = ({ isOpen, onClose, hotel }) => {
             placeholder="A brief description of the property..."
           ></textarea>
           {errors.description && <p className="mt-1.5 text-sm text-red-600">{errors.description.message}</p>}
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-start">
+          <div>
+            <label className="block text-sm font-medium text-zinc-700 mb-1.5">Logo</label>
+            <div className="flex items-center gap-3">
+              <div className="w-14 h-14 rounded-lg border border-zinc-200 bg-zinc-50 flex items-center justify-center overflow-hidden">
+                {logoPreview ? (
+                  <img src={logoPreview} alt="Logo preview" className="w-full h-full object-contain" />
+                ) : (
+                  <span className="text-[10px] text-zinc-400">No logo</span>
+                )}
+              </div>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleLogoChange}
+                className="text-xs text-zinc-600 file:mr-2 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:bg-zinc-900 file:text-white file:text-xs cursor-pointer"
+              />
+            </div>
+            {errors.logo && <p className="mt-1.5 text-sm text-red-600">{errors.logo.message}</p>}
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-zinc-700 mb-1.5">Status</label>
+            <label className="inline-flex items-center gap-2 cursor-pointer select-none">
+              <button
+                type="button"
+                role="switch"
+                aria-checked={isActive}
+                onClick={() => setIsActive(v => !v)}
+                className={`relative inline-flex h-5 w-9 rounded-full transition-colors ${isActive ? 'bg-zinc-900' : 'bg-zinc-300'}`}
+              >
+                <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white transition-transform ${isActive ? 'translate-x-4' : 'translate-x-0.5'}`} />
+              </button>
+              <span className="text-sm text-zinc-700">{isActive ? 'Active' : 'Inactive'}</span>
+            </label>
+          </div>
         </div>
       </form>
     </Modal>

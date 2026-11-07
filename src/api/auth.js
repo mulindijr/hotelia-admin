@@ -40,7 +40,22 @@ export const authApi = {
   },
   
   logoutAllDevices: async () => {
-    const response = await api.post('/auth/logout-all-devices');
+    const response = await api.post('/auth/logout-all');
+    return response.data;
+  },
+
+  refreshToken: async () => {
+    const response = await api.post('/auth/refresh-token');
+    return response.data;
+  },
+
+  getLoginHistory: async () => {
+    const response = await api.get('/login-history');
+    return response.data;
+  },
+
+  getFailedLogins: async () => {
+    const response = await api.get('/failed-logins');
     return response.data;
   },
 };
