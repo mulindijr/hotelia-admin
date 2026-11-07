@@ -1,51 +1,53 @@
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from './context/AuthContext';
 import { HotelProvider } from './context/HotelContext';
 import AppShell from './components/layout/AppShell';
-import LoginPage from './pages/auth/LoginPage';
-import RegisterPage from './pages/auth/RegisterPage';
-import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
-import ResetPasswordPage from './pages/auth/ResetPasswordPage';
 
-// Phase 3 Pages
-import HotelListPage from './pages/hotels/HotelListPage';
-import HotelSettingsPage from './pages/settings/HotelSettingsPage';
-import ServicesPage from './pages/rooms/ServicesPage';
-import AmenitiesPage from './pages/rooms/AmenitiesPage';
-import RoomTypesPage from './pages/rooms/RoomTypesPage';
-import RoomsPage from './pages/rooms/RoomsPage';
-import AvailabilityMatrixPage from './pages/rooms/AvailabilityMatrixPage';
-import GuestListPage from './pages/guests/GuestListPage';
-import GuestDetailsPage from './pages/guests/GuestDetailsPage';
+// Public Auth Pages (Lazy loaded)
+const LoginPage = lazy(() => import('./pages/auth/LoginPage'));
+const RegisterPage = lazy(() => import('./pages/auth/RegisterPage'));
+const ForgotPasswordPage = lazy(() => import('./pages/auth/ForgotPasswordPage'));
+const ResetPasswordPage = lazy(() => import('./pages/auth/ResetPasswordPage'));
 
-// Phase 4 Pages
-import BookingListPage from './pages/bookings/BookingListPage';
-import BookingDetailsPage from './pages/bookings/BookingDetailsPage';
+// Protected Pages (Lazy loaded)
+const HotelListPage = lazy(() => import('./pages/hotels/HotelListPage'));
+const HotelSettingsPage = lazy(() => import('./pages/settings/HotelSettingsPage'));
+const ServicesPage = lazy(() => import('./pages/rooms/ServicesPage'));
+const AmenitiesPage = lazy(() => import('./pages/rooms/AmenitiesPage'));
+const RoomTypesPage = lazy(() => import('./pages/rooms/RoomTypesPage'));
+const RoomsPage = lazy(() => import('./pages/rooms/RoomsPage'));
+const AvailabilityMatrixPage = lazy(() => import('./pages/rooms/AvailabilityMatrixPage'));
+const GuestListPage = lazy(() => import('./pages/guests/GuestListPage'));
+const GuestDetailsPage = lazy(() => import('./pages/guests/GuestDetailsPage'));
 
-// Phase 5 Pages
-import DashboardPage from './pages/dashboard/DashboardPage';
-import PaymentListPage from './pages/payments/PaymentListPage';
-import UserListPage from './pages/users/UserListPage';
+const BookingListPage = lazy(() => import('./pages/bookings/BookingListPage'));
+const BookingDetailsPage = lazy(() => import('./pages/bookings/BookingDetailsPage'));
+const PaymentListPage = lazy(() => import('./pages/payments/PaymentListPage'));
+const UserListPage = lazy(() => import('./pages/users/UserListPage'));
 
-// Phase 6 Pages
-import ReportsPage from './pages/reports/ReportsPage';
+const DashboardPage = lazy(() => import('./pages/dashboard/DashboardPage'));
+const ReportsPage = lazy(() => import('./pages/reports/ReportsPage'));
 
-// Phase 7 Pages
-import HousekeepingPage from './pages/operations/HousekeepingPage';
-import MaintenancePage from './pages/operations/MaintenancePage';
+const HousekeepingPage = lazy(() => import('./pages/operations/HousekeepingPage'));
+const MaintenancePage = lazy(() => import('./pages/operations/MaintenancePage'));
 
-// Phase 8 Pages
-import AuditLogsPage from './pages/admin/AuditLogsPage';
-import RolesPage from './pages/admin/RolesPage';
+const AuditLogsPage = lazy(() => import('./pages/admin/AuditLogsPage'));
+const RolesPage = lazy(() => import('./pages/admin/RolesPage'));
+
+const RatePlansPage = lazy(() => import('./pages/pricing/RatePlansPage'));
+const PricingRulesPage = lazy(() => import('./pages/pricing/PricingRulesPage'));
 
 // Create a client
 const queryClient = new QueryClient();
 
-// Placeholder components for routes
-const Placeholder = ({ title }) => <div className="p-6"><h1 className="text-2xl font-bold text-zinc-900">{title}</h1></div>;
+const FallbackLoader = () => (
+  <div className="min-h-screen flex items-center justify-center bg-zinc-50">
+    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-zinc-900" />
+  </div>
+);
 
 function App() {
   return (
@@ -54,51 +56,57 @@ function App() {
       <BrowserRouter>
         <AuthProvider>
           <HotelProvider>
-            <Routes>
-              {/* Public Routes */}
-              <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
-              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-              <Route path="/reset-password" element={<ResetPasswordPage />} />
+            <Suspense fallback={<FallbackLoader />}>
+              <Routes>
+                {/* Public Routes */}
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/register" element={<RegisterPage />} />
+                <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+                <Route path="/reset-password" element={<ResetPasswordPage />} />
 
-              {/* Protected Routes inside AppShell */}
-              <Route element={<AppShell />}>
-                <Route path="/" element={<DashboardPage />} />
-                
-                {/* Phase 6 Analytics */}
-                <Route path="/reports" element={<ReportsPage />} />
+                {/* Protected Routes inside AppShell */}
+                <Route element={<AppShell />}>
+                  <Route path="/" element={<DashboardPage />} />
+                  
+                  {/* Analytics */}
+                  <Route path="/reports" element={<ReportsPage />} />
 
-                {/* Phase 7 Operations */}
-                <Route path="/housekeeping" element={<HousekeepingPage />} />
-                <Route path="/maintenance" element={<MaintenancePage />} />
+                  {/* Operations */}
+                  <Route path="/housekeeping" element={<HousekeepingPage />} />
+                  <Route path="/maintenance" element={<MaintenancePage />} />
 
-                {/* Phase 8 Admin */}
-                <Route path="/audit-logs" element={<AuditLogsPage />} />
-                <Route path="/roles" element={<RolesPage />} />
-                
-                {/* Bookings & Payments (Phase 4/5) */}
-                <Route path="/bookings" element={<BookingListPage />} />
-                <Route path="/bookings/:id" element={<BookingDetailsPage />} />
-                <Route path="/payments" element={<PaymentListPage />} />
-                <Route path="/users" element={<UserListPage />} />
-                
-                {/* Phase 3 Master Data */}
-                <Route path="/hotels" element={<HotelListPage />} />
-                <Route path="/settings" element={<HotelSettingsPage />} />
-                <Route path="/services" element={<ServicesPage />} />
-                <Route path="/guests" element={<GuestListPage />} />
-                <Route path="/guests/:id" element={<GuestDetailsPage />} />
-                
-                {/* Rooms Sub-Routing */}
-                <Route path="/rooms" element={<RoomsPage />} />
-                <Route path="/room-types" element={<RoomTypesPage />} />
-                <Route path="/amenities" element={<AmenitiesPage />} />
-                <Route path="/availability" element={<AvailabilityMatrixPage />} />
-              </Route>
+                  {/* Admin */}
+                  <Route path="/audit-logs" element={<AuditLogsPage />} />
+                  <Route path="/roles" element={<RolesPage />} />
+                  
+                  {/* Bookings & Payments */}
+                  <Route path="/bookings" element={<BookingListPage />} />
+                  <Route path="/bookings/:id" element={<BookingDetailsPage />} />
+                  <Route path="/payments" element={<PaymentListPage />} />
+                  <Route path="/users" element={<UserListPage />} />
+                  
+                  {/* Master Data */}
+                  <Route path="/hotels" element={<HotelListPage />} />
+                  <Route path="/settings" element={<HotelSettingsPage />} />
+                  <Route path="/services" element={<ServicesPage />} />
+                  <Route path="/guests" element={<GuestListPage />} />
+                  <Route path="/guests/:id" element={<GuestDetailsPage />} />
+                  
+                  {/* Rooms Sub-Routing */}
+                  <Route path="/rooms" element={<RoomsPage />} />
+                  <Route path="/room-types" element={<RoomTypesPage />} />
+                  <Route path="/amenities" element={<AmenitiesPage />} />
+                  <Route path="/availability" element={<AvailabilityMatrixPage />} />
 
-              {/* Catch-all 404 */}
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
+                  {/* Pricing */}
+                  <Route path="/rate-plans" element={<RatePlansPage />} />
+                  <Route path="/pricing-rules" element={<PricingRulesPage />} />
+                </Route>
+
+                {/* Catch-all 404 */}
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            </Suspense>
           </HotelProvider>
         </AuthProvider>
       </BrowserRouter>
