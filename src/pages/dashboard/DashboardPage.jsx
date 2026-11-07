@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Users, BedDouble, CalendarCheck, DollarSign, Building2, Wrench, Sparkles } from 'lucide-react';
+import { Users, BedDouble, CalendarCheck, DollarSign, Building2, Wrench, Sparkles, Plus, ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { reportsApi } from '../../api/reports';
 import { useHotel } from '../../context/HotelContext';
 import { useCurrency } from '../../hooks/useCurrency';
 import Card from '../../components/common/Card';
+import Button from '../../components/common/Button';
+import CreateBookingModal from '../../components/bookings/CreateBookingModal';
 import {
   LineChart,
   Line,
@@ -32,6 +34,8 @@ const DashboardPage = () => {
     start_date: format(subDays(new Date(), 30), 'yyyy-MM-dd'),
     end_date: format(new Date(), 'yyyy-MM-dd')
   });
+
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   const { data: dashboardData, isLoading: isLoadingDashboard } = useQuery({
     queryKey: ['reports_dashboard', activeHotelId, dateRange],
@@ -79,36 +83,40 @@ const DashboardPage = () => {
   const rawRevenue = revenueData?.data || {};
   const metrics = rawDashboard.metrics || {};
 
-  const hasLegacyMetrics = Boolean(rawDashboard.metrics);
-
   const statCards = [
     {
-      label: hasLegacyMetrics ? 'Check-Ins Today' : 'Active Bookings',
-      value: metrics.today_check_ins ?? rawDashboard.active_bookings_count ?? 0,
+      label: 'Check-Ins Today',
+      value: rawDashboard.today_arrivals ?? metrics.today_check_ins ?? 0,
       icon: CalendarCheck,
-      color: 'text-blue-600',
-      bg: 'bg-blue-50',
+      color: 'text-zinc-900',
+      bg: 'bg-zinc-100',
+      action: () => navigate('/bookings?queue=arrivals_today'),
+      actionText: 'Arrivals queue',
     },
     {
-      label: hasLegacyMetrics ? 'Check-Outs Today' : 'Occupied Rooms',
-      value: metrics.today_check_outs ?? rawDashboard.occupied_rooms ?? 0,
-      icon: BedDouble,
-      color: 'text-orange-600',
-      bg: 'bg-orange-50',
+      label: 'Check-Outs Today',
+      value: rawDashboard.today_departures ?? metrics.today_check_outs ?? 0,
+      icon: CalendarCheck,
+      color: 'text-zinc-900',
+      bg: 'bg-zinc-100',
+      action: () => navigate('/bookings?queue=departures_today'),
+      actionText: 'Departures queue',
+    },
+    {
+      label: 'In-House Guests',
+      value: rawDashboard.in_house_count ?? rawDashboard.active_bookings_count ?? 0,
+      icon: Users,
+      color: 'text-zinc-900',
+      bg: 'bg-zinc-100',
+      action: () => navigate('/bookings?queue=in_house'),
+      actionText: 'In-house guests',
     },
     {
       label: 'Occupancy Rate',
       value: `${metrics.occupancy_rate ?? rawDashboard.occupancy_rate ?? 0}%`,
       icon: BedDouble,
-      color: 'text-indigo-600',
-      bg: 'bg-indigo-50',
-    },
-    {
-      label: 'Available Rooms',
-      value: metrics.available_rooms ?? rawDashboard.room_statuses?.available ?? 0,
-      icon: Users,
-      color: 'text-emerald-600',
-      bg: 'bg-emerald-50',
+      color: 'text-zinc-900',
+      bg: 'bg-zinc-100',
     },
     {
       label: 'Revenue (30d)',
@@ -143,25 +151,45 @@ const DashboardPage = () => {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-zinc-900">Dashboard Overview</h1>
-        <p className="mt-1 text-sm text-zinc-500">Key metrics and performance for your property.</p>
+      <div className="-mx-6 -mt-6 px-6 py-6 mb-6 bg-zinc-50 border-b border-zinc-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-zinc-900">Dashboard Overview</h1>
+          <p className="mt-1 text-sm text-zinc-500">Key metrics and front desk operations for your property.</p>
+        </div>
+        <Button onClick={() => setIsCreateModalOpen(true)} className="gap-2">
+          <Plus className="w-4 h-4" />
+          New Booking
+        </Button>
       </div>
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         {statCards.map((stat, idx) => (
-          <div key={idx} className="bg-white p-5 rounded-xl border border-zinc-200 shadow-sm flex flex-col justify-center">
-            <div className="flex items-center gap-3 mb-3">
-              <div className={`p-2 rounded-lg ${stat.bg}`}>
-                <stat.icon className={`w-5 h-5 ${stat.color}`} />
+          <div 
+            key={idx} 
+            className={`bg-white p-5 rounded-xl border border-zinc-200 shadow-xs flex flex-col justify-between transition-all ${
+              stat.action ? 'hover:border-zinc-400 hover:shadow-sm cursor-pointer' : ''
+            }`}
+            onClick={stat.action ? stat.action : undefined}
+          >
+            <div>
+              <div className="flex items-center gap-3 mb-3">
+                <div className={`p-2 rounded-lg ${stat.bg}`}>
+                  <stat.icon className={`w-5 h-5 ${stat.color}`} />
+                </div>
+                <h3 className="text-sm font-medium text-zinc-500 line-clamp-1">{stat.label}</h3>
               </div>
-              <h3 className="text-sm font-medium text-zinc-500 line-clamp-1">{stat.label}</h3>
+              {isLoadingDashboard || (idx === 4 && isLoadingRevenue) ? (
+                <div className="h-8 bg-zinc-100 rounded animate-pulse w-1/2"></div>
+              ) : (
+                <p className="text-2xl font-bold text-zinc-900">{stat.value}</p>
+              )}
             </div>
-            {isLoadingDashboard || (idx === 4 && isLoadingRevenue) ? (
-              <div className="h-8 bg-zinc-100 rounded animate-pulse w-1/2"></div>
-            ) : (
-              <p className="text-2xl font-bold text-zinc-900">{stat.value}</p>
+            {stat.action && (
+              <div className="mt-3 pt-2.5 border-t border-zinc-100 flex items-center justify-between text-xs font-medium text-zinc-600 hover:text-zinc-900">
+                <span>{stat.actionText}</span>
+                <ArrowRight className="w-3.5 h-3.5 text-zinc-400" />
+              </div>
             )}
           </div>
         ))}
@@ -291,6 +319,13 @@ const DashboardPage = () => {
           </div>
         </Card>
       </div>
+
+      {activeHotelId && (
+        <CreateBookingModal
+          isOpen={isCreateModalOpen}
+          onClose={() => setIsCreateModalOpen(false)}
+        />
+      )}
     </div>
   );
 };

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { Plus, Eye, Download } from 'lucide-react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { bookingsApi } from '../../api/bookings';
 import { useHotel } from '../../context/HotelContext';
 import { useCurrency } from '../../hooks/useCurrency';
@@ -25,14 +25,32 @@ const BookingListPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortConfig, setSortConfig] = useState({ field: 'created_at', direction: 'desc' });
   
+  const [searchParams, setSearchParams] = useSearchParams();
+  const queueFilter = searchParams.get('queue') || '';
+
+  const handleQueueChange = (queueKey) => {
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev);
+      if (queueKey) {
+        next.set('queue', queueKey);
+      } else {
+        next.delete('queue');
+      }
+      return next;
+    });
+    setPage(1);
+    setSelectedRows([]);
+  };
+
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   const { data, isLoading } = useQuery({
-    queryKey: ['bookings', activeHotelId, page, perPage, statusFilter, searchQuery, sortConfig],
+    queryKey: ['bookings', activeHotelId, page, perPage, statusFilter, searchQuery, sortConfig, queueFilter],
     queryFn: () => {
       const filters = {};
       if (statusFilter) filters.status = statusFilter;
       if (searchQuery) filters.search = searchQuery;
+      if (queueFilter) filters.queue = queueFilter;
       
       const sort = sortConfig.direction === 'desc' ? `-${sortConfig.field}` : sortConfig.field;
       
@@ -216,6 +234,33 @@ const BookingListPage = () => {
           <Plus className="w-4 h-4 mr-2" />
           New Booking
         </Button>
+      </div>
+
+      {/* Front Desk Operational Queues */}
+      <div className="flex flex-wrap items-center gap-1.5 p-1 bg-zinc-100 rounded-xl w-fit">
+        {[
+          { key: '', label: 'All Reservations' },
+          { key: 'arrivals_today', label: "Today's Arrivals" },
+          { key: 'departures_today', label: "Today's Departures" },
+          { key: 'in_house', label: 'In-House Guests' },
+        ].map((tab) => {
+          const isActive = queueFilter === tab.key;
+          return (
+            <button
+              key={tab.key}
+              type="button"
+              onClick={() => handleQueueChange(tab.key)}
+              className={`
+                px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer select-none
+                ${isActive 
+                  ? 'bg-white text-zinc-900 shadow-xs font-semibold' 
+                  : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-200/60'}
+              `}
+            >
+              {tab.label}
+            </button>
+          );
+        })}
       </div>
 
       <DataTable 

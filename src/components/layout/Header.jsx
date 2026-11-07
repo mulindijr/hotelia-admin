@@ -1,15 +1,17 @@
-import React from 'react';
-import { Menu, User, LogOut } from 'lucide-react';
+import React, { useState } from 'react';
+import { Menu, User, LogOut, Plus } from 'lucide-react';
 import NotificationsDropdown from './NotificationsDropdown';
 import { useAuth } from '../../context/AuthContext';
 import { useHotel } from '../../context/HotelContext';
 import ProfileSettingsModal from '../users/ProfileSettingsModal';
+import CreateBookingModal from '../bookings/CreateBookingModal';
 
 const Header = ({ onMenuToggle }) => {
-  const { user, logout } = useAuth();
+  const { user, logout, hasPermission } = useAuth();
   const { hotels, activeHotelId, changeHotel } = useHotel();
-  const [profileOpen, setProfileOpen] = React.useState(false);
-  const [isProfileModalOpen, setIsProfileModalOpen] = React.useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
 
   return (
     <>
@@ -40,7 +42,27 @@ const Header = ({ onMenuToggle }) => {
         )}
       </div>
 
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-3">
+        {/* Fast Action: New Booking */}
+        {hasPermission('create bookings') && activeHotelId && (
+          <>
+            <button
+              onClick={() => setIsBookingModalOpen(true)}
+              className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-zinc-900 hover:bg-zinc-800 rounded-lg shadow-xs transition-colors cursor-pointer select-none"
+            >
+              <Plus className="w-4 h-4" />
+              <span>New Booking</span>
+            </button>
+            <button
+              onClick={() => setIsBookingModalOpen(true)}
+              className="sm:hidden p-2 text-white bg-zinc-900 hover:bg-zinc-800 rounded-lg shadow-xs transition-colors cursor-pointer"
+              title="New Booking"
+            >
+              <Plus className="w-4 h-4" />
+            </button>
+          </>
+        )}
+
         <NotificationsDropdown />
 
         <div className="relative">
@@ -80,6 +102,12 @@ const Header = ({ onMenuToggle }) => {
       </div>
     </header>
       <ProfileSettingsModal isOpen={isProfileModalOpen} onClose={() => setIsProfileModalOpen(false)} />
+      {activeHotelId && (
+        <CreateBookingModal 
+          isOpen={isBookingModalOpen} 
+          onClose={() => setIsBookingModalOpen(false)} 
+        />
+      )}
     </>
   );
 };
