@@ -13,7 +13,8 @@ import {
   CalendarRange, 
   Printer, 
   AlertCircle, 
-  User 
+  User,
+  RefreshCw
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import ModifyBookingModal from '../../components/bookings/ModifyBookingModal';
@@ -21,6 +22,7 @@ import RegistrationCardModal from '../../components/bookings/RegistrationCardMod
 import { useHotel } from '../../context/HotelContext';
 import { useCurrency } from '../../hooks/useCurrency';
 import { bookingsApi } from '../../api/bookings';
+import { paymentsApi } from '../../api/payments';
 import { downloadBlob } from '../../api/client';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
@@ -45,6 +47,7 @@ const BookingDetailsPage = () => {
   const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
   const [isModifyStayModalOpen, setIsModifyStayModalOpen] = useState(false);
   const [isRegCardOpen, setIsRegCardOpen] = useState(false);
+  const [paymentToRefund, setPaymentToRefund] = useState(null);
 
   const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ['booking', activeHotelId, id],
@@ -60,6 +63,7 @@ const BookingDetailsPage = () => {
         checked_out: 'Guest checked out successfully',
         checked_in: 'Guest checked in successfully',
         confirmed: 'Booking confirmed successfully',
+        no_show: 'Booking marked as No-Show',
       };
       toast.success(statusMessages[status] || 'Booking status updated successfully');
     },
@@ -117,7 +121,9 @@ const BookingDetailsPage = () => {
           const text = await err.response.data.text();
           const json = JSON.parse(text);
           if (json.message) message = json.message;
-        } catch (_) {}
+        } catch {
+          // ignore parsing error
+        }
       } else if (err.response?.data?.message) {
         message = err.response.data.message;
       } else if (err.message) {
@@ -138,6 +144,41 @@ const BookingDetailsPage = () => {
     onError: (err) => {
       toast.error(err.response?.data?.message || 'Failed to record payment');
     }
+  });
+
+  const paymentActionMutation = useMutation({
+    mutationFn: ({ paymentId, status }) =>
+      paymentsApi.updatePaymentStatus(activeHotelId, id, paymentId, { status }),
+    onSuccess: (_, { status }) => {
+      queryClient.invalidateQueries({ queryKey: ['booking', activeHotelId, id] });
+      queryClient.invalidateQueries({ queryKey: ['payments', activeHotelId] });
+      toast.success(`Payment marked as ${status}`);
+      setPaymentToRefund(null);
+    },
+    onError: (err) => toast.error(err.response?.data?.message || 'Failed to update payment'),
+  });
+
+  const receiptMutation = useMutation({
+    mutationFn: (paymentId) => bookingsApi.downloadPaymentReceipt(activeHotelId, id, paymentId),
+    onSuccess: async (response, paymentId) => {
+      if (response.data instanceof Blob && response.data.type === 'application/json') {
+        const json = JSON.parse(await response.data.text());
+        toast.error(json.message || 'Failed to generate receipt');
+        return;
+      }
+      downloadBlob(response.data, `receipt-${paymentId}.pdf`);
+      toast.success('Receipt downloaded');
+    },
+    onError: () => toast.error('Failed to download receipt'),
+  });
+
+  const regenerateInvoiceMutation = useMutation({
+    mutationFn: () => bookingsApi.regenerateInvoice(activeHotelId, id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['booking', activeHotelId, id] });
+      toast.success('Invoice regenerated with latest charges');
+    },
+    onError: (err) => toast.error(err.response?.data?.message || 'Failed to regenerate invoice'),
   });
 
   const addServiceMutation = useMutation({
@@ -226,7 +267,9 @@ const BookingDetailsPage = () => {
   const taxRate = Number(booking?.tax_rate ?? 0);
   const taxAmount = Number(booking?.tax_amount ?? ((roomsSubtotal + servicesSubtotal) * (taxRate / 100)));
   const grandTotal = Number(booking?.grand_total ?? ((roomsSubtotal + servicesSubtotal) + taxAmount));
-  const totalPaid = booking?.payments?.reduce((sum, p) => sum + Number(p.amount), 0) || 0;
+  const totalPaid = booking?.payments
+    ?.filter(p => !p.status || p.status === 'completed')
+    .reduce((sum, p) => sum + Number(p.amount), 0) || 0;
   const balanceDue = grandTotal - totalPaid;
 
   return (
@@ -259,6 +302,11 @@ const BookingDetailsPage = () => {
           {(booking.status === 'confirmed' || booking.status === 'pending') && (
             <Button variant="secondary" onClick={() => updateStatusMutation.mutate('checked_in')} isLoading={updateStatusMutation.isPending && updateStatusMutation.variables === 'checked_in'} disabled={updateStatusMutation.isPending}>
               Check In
+            </Button>
+          )}
+          {(booking.status === 'confirmed' || booking.status === 'pending') && (
+            <Button variant="secondary" onClick={() => updateStatusMutation.mutate('no_show')} isLoading={updateStatusMutation.isPending && updateStatusMutation.variables === 'no_show'} disabled={updateStatusMutation.isPending}>
+              No Show
             </Button>
           )}
           {booking.status === 'checked_in' && (
@@ -297,6 +345,16 @@ const BookingDetailsPage = () => {
           >
             <Download className="w-4 h-4 mr-2" />
             Invoice
+          </Button>
+          <Button
+            variant="secondary"
+            onClick={() => regenerateInvoiceMutation.mutate()}
+            isLoading={regenerateInvoiceMutation.isPending}
+            disabled={regenerateInvoiceMutation.isPending}
+            title="Rebuild invoice with latest services, dates and payments"
+          >
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Regenerate
           </Button>
         </div>
       </div>
@@ -529,27 +587,84 @@ const BookingDetailsPage = () => {
                       <th className="px-4 py-2 font-medium">Date</th>
                       <th className="px-4 py-2 font-medium">Method</th>
                       <th className="px-4 py-2 font-medium">Ref</th>
+                      <th className="px-4 py-2 font-medium">Status</th>
                       <th className="px-4 py-2 font-medium text-right">Amount</th>
+                      <th className="px-4 py-2 font-medium text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-zinc-200 bg-white">
-                    {booking.payments.map((payment) => (
-                      <tr key={payment.id}>
-                        <td className="px-4 py-2 text-zinc-600">{new Date(payment.created_at).toLocaleString()}</td>
-                        <td className="px-4 py-2 text-zinc-900 capitalize">{payment.payment_method.replace('_', ' ')}</td>
-                        <td className="px-4 py-2 text-zinc-500">{payment.transaction_reference || '-'}</td>
-                        <td className="px-4 py-2 text-zinc-900 font-medium text-right">{formatCurrency(payment.amount)}</td>
-                      </tr>
-                    ))}
+                    {booking.payments.map((payment) => {
+                      const status = payment.status || 'completed';
+                      const statusStyles = {
+                        completed: 'bg-emerald-50 text-emerald-700',
+                        pending: 'bg-amber-50 text-amber-700',
+                        failed: 'bg-rose-50 text-rose-700',
+                        refunded: 'bg-zinc-100 text-zinc-600',
+                      };
+                      const busy = paymentActionMutation.isPending && paymentActionMutation.variables?.paymentId === payment.id;
+                      return (
+                        <tr key={payment.id}>
+                          <td className="px-4 py-2 text-zinc-600">{new Date(payment.created_at).toLocaleString()}</td>
+                          <td className="px-4 py-2 text-zinc-900 capitalize">{payment.payment_method?.replace('_', ' ')}</td>
+                          <td className="px-4 py-2 text-zinc-500">{payment.transaction_reference || '-'}</td>
+                          <td className="px-4 py-2">
+                            <span className={`px-2 py-0.5 rounded text-xs font-medium capitalize ${statusStyles[status] || statusStyles.pending}`}>{status}</span>
+                          </td>
+                          <td className={`px-4 py-2 font-medium text-right ${status === 'completed' ? 'text-zinc-900' : 'text-zinc-400 line-through'}`}>
+                            {formatCurrency(payment.amount)}
+                          </td>
+                          <td className="px-4 py-2 text-right">
+                            <div className="flex items-center justify-end gap-1">
+                              {status === 'pending' && (
+                                <>
+                                  <button
+                                    onClick={() => paymentActionMutation.mutate({ paymentId: payment.id, status: 'completed' })}
+                                    disabled={busy}
+                                    className="px-2 py-1 text-xs rounded-md text-emerald-700 hover:bg-emerald-50 disabled:opacity-50"
+                                  >
+                                    Confirm
+                                  </button>
+                                  <button
+                                    onClick={() => paymentActionMutation.mutate({ paymentId: payment.id, status: 'failed' })}
+                                    disabled={busy}
+                                    className="px-2 py-1 text-xs rounded-md text-rose-700 hover:bg-rose-50 disabled:opacity-50"
+                                  >
+                                    Mark Failed
+                                  </button>
+                                </>
+                              )}
+                              {status === 'completed' && (
+                                <button
+                                  onClick={() => setPaymentToRefund(payment)}
+                                  disabled={busy}
+                                  className="px-2 py-1 text-xs rounded-md text-zinc-600 hover:bg-zinc-100 disabled:opacity-50"
+                                >
+                                  Refund
+                                </button>
+                              )}
+                              <button
+                                onClick={() => receiptMutation.mutate(payment.id)}
+                                disabled={receiptMutation.isPending && receiptMutation.variables === payment.id}
+                                className="p-1.5 text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 rounded-md disabled:opacity-50"
+                                title="Download Receipt"
+                              >
+                                <Download className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                   <tfoot className="bg-zinc-50 border-t border-zinc-200">
                     <tr>
-                      <td colSpan={3} className="px-4 py-2.5 text-sm font-semibold text-zinc-900 text-right">
+                      <td colSpan={4} className="px-4 py-2.5 text-sm font-semibold text-zinc-900 text-right">
                         Total Paid
                       </td>
                       <td className="px-4 py-2.5 text-sm font-bold text-emerald-600 text-right">
                         {formatCurrency(totalPaid)}
                       </td>
+                      <td />
                     </tr>
                   </tfoot>
                 </table>
@@ -593,6 +708,17 @@ const BookingDetailsPage = () => {
           });
         }}
         isLoading={addServiceMutation.isPending}
+      />
+
+      <ConfirmModal
+        isOpen={!!paymentToRefund}
+        onClose={() => setPaymentToRefund(null)}
+        onConfirm={() => paymentActionMutation.mutate({ paymentId: paymentToRefund.id, status: 'refunded' })}
+        title="Refund Payment"
+        description={`Mark the ${paymentToRefund ? formatCurrency(paymentToRefund.amount) : ''} payment as refunded? It will no longer count toward the amount paid. Make sure the money has actually been returned to the guest.`}
+        confirmText="Mark Refunded"
+        isDestructive={true}
+        isLoading={paymentActionMutation.isPending}
       />
 
       <InvoiceModal

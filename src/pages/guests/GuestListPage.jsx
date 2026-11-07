@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import { Plus, Edit2, Trash2, Eye } from 'lucide-react';
+import { Plus, Edit2, Trash2, Eye, Download } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { guestsApi } from '../../api/guests';
 import DataTable from '../../components/common/DataTable';
 import Button from '../../components/common/Button';
@@ -41,6 +42,29 @@ const GuestListPage = () => {
   const openForm = (guest = null) => {
     setEditingGuest(guest);
     setIsFormOpen(true);
+  };
+
+  const handleExportSelected = () => {
+    const list = (data?.data || []).filter(g => selectedRows.includes(g.id));
+    if (!list.length) return;
+    const headers = ['ID', 'First Name', 'Last Name', 'Email', 'Phone', 'Country'];
+    const rows = list.map(g => [
+      g.id,
+      `"${g.first_name || ''}"`,
+      `"${g.last_name || ''}"`,
+      g.email || '',
+      g.phone || '',
+      `"${g.country || ''}"`
+    ]);
+    const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `guests-selected-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+    toast.success(`Exported ${list.length} guests`);
   };
 
   const columns = [
@@ -107,6 +131,15 @@ const GuestListPage = () => {
         enableSelection={true}
         selectedRowIds={selectedRows}
         onSelectionChange={setSelectedRows}
+        bulkActions={
+          <button
+            onClick={handleExportSelected}
+            className="inline-flex items-center gap-1.5 px-3 py-1 bg-white text-zinc-900 rounded text-xs font-medium hover:bg-zinc-100 cursor-pointer"
+          >
+            <Download className="w-3.5 h-3.5" />
+            Export Selected (CSV)
+          </button>
+        }
         pagination={{
           current_page: data?.meta?.current_page,
           from: data?.meta?.from,

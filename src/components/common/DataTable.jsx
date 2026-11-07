@@ -27,6 +27,7 @@ const DataTable = ({
   enableSelection = false,
   selectedRowIds = [],
   onSelectionChange,
+  bulkActions,
 }) => {
   const [localSearch, setLocalSearch] = useState(searchValue || '');
 
@@ -115,6 +116,29 @@ const DataTable = ({
                 ))}
               </select>
               <span>entries</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Bulk Actions Toolbar */}
+      {enableSelection && selectedRowIds.length > 0 && (
+        <div className="px-4 py-2.5 bg-zinc-900 text-white flex flex-wrap items-center justify-between gap-3 text-xs sm:text-sm animate-in fade-in">
+          <div className="flex items-center gap-3">
+            <span className="font-semibold text-white">
+              {selectedRowIds.length} {selectedRowIds.length === 1 ? 'item' : 'items'} selected
+            </span>
+            <button
+              type="button"
+              onClick={() => onSelectionChange && onSelectionChange([])}
+              className="text-zinc-300 hover:text-white underline cursor-pointer text-xs"
+            >
+              Clear selection
+            </button>
+          </div>
+          {bulkActions && (
+            <div className="flex items-center gap-2">
+              {typeof bulkActions === 'function' ? bulkActions({ selectedRowIds, clearSelection: () => onSelectionChange && onSelectionChange([]) }) : bulkActions}
             </div>
           )}
         </div>

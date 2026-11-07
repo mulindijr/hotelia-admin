@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { Plus, Eye, Download } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { bookingsApi } from '../../api/bookings';
@@ -17,7 +17,6 @@ const BookingListPage = () => {
   const { activeHotelId } = useHotel();
   const { formatCurrency } = useCurrency();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(15);
@@ -67,13 +66,39 @@ const BookingListPage = () => {
           const text = await err.response.data.text();
           const json = JSON.parse(text);
           if (json.message) message = json.message;
-        } catch (_) {}
+        } catch {
+          // ignore parsing error
+        }
       } else if (err.message) {
         message = err.message;
       }
       toast.error(message);
     }
   });
+
+  const handleExportSelected = () => {
+    const list = (data?.data || []).filter(b => selectedRows.includes(b.id));
+    if (!list.length) return;
+    const headers = ['Ref', 'Guest', 'Email', 'Check In', 'Check Out', 'Status', 'Total'];
+    const rows = list.map(b => [
+      b.booking_reference,
+      b.guest ? `"${b.guest.first_name} ${b.guest.last_name}"` : 'Unknown',
+      b.guest?.email || '',
+      b.check_in_date,
+      b.check_out_date,
+      b.status,
+      b.grand_total ?? b.total_amount ?? 0
+    ]);
+    const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `bookings-selected-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+    toast.success(`Exported ${list.length} reservations`);
+  };
 
   const columns = [
     { 
@@ -213,6 +238,15 @@ const BookingListPage = () => {
         enableSelection={true}
         selectedRowIds={selectedRows}
         onSelectionChange={setSelectedRows}
+        bulkActions={
+          <button
+            onClick={handleExportSelected}
+            className="inline-flex items-center gap-1.5 px-3 py-1 bg-white text-zinc-900 rounded text-xs font-medium hover:bg-zinc-100 cursor-pointer"
+          >
+            <Download className="w-3.5 h-3.5" />
+            Export Selected (CSV)
+          </button>
+        }
         pagination={{
           current_page: data?.meta?.current_page,
           from: data?.meta?.from,
