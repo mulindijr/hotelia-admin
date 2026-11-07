@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Menu, User, LogOut, Plus } from 'lucide-react';
 import NotificationsDropdown from './NotificationsDropdown';
+import HotelSwitcher from './HotelSwitcher';
 import { useAuth } from '../../context/AuthContext';
 import { useHotel } from '../../context/HotelContext';
 import ProfileSettingsModal from '../users/ProfileSettingsModal';
@@ -8,7 +9,7 @@ import CreateBookingModal from '../bookings/CreateBookingModal';
 
 const Header = ({ onMenuToggle }) => {
   const { user, logout, hasPermission } = useAuth();
-  const { hotels, activeHotelId, changeHotel } = useHotel();
+  const { activeHotelId } = useHotel();
   const [profileOpen, setProfileOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
@@ -16,30 +17,16 @@ const Header = ({ onMenuToggle }) => {
   return (
     <>
       <header className="bg-white border-b border-zinc-200 h-16 flex items-center justify-between px-4 sm:px-6 z-10 w-full">
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-3">
         <button 
           onClick={onMenuToggle}
-          className="text-zinc-500 hover:text-zinc-900 lg:hidden p-1 rounded-md focus:outline-none focus:ring-2 focus:ring-zinc-900"
+          className="text-zinc-500 hover:text-zinc-900 lg:hidden p-1 rounded-md focus:outline-none focus:ring-2 focus:ring-zinc-900 cursor-pointer"
         >
           <Menu className="w-6 h-6" />
         </button>
         
-        {/* Hotel Selector */}
-        {hotels.length > 0 && (
-          <div className="flex items-center ml-2 sm:ml-0">
-            <select
-              value={activeHotelId || ''}
-              onChange={(e) => changeHotel(parseInt(e.target.value))}
-              className="bg-zinc-50 border border-zinc-200 text-zinc-900 text-sm rounded-lg focus:ring-zinc-900 focus:border-zinc-900 block p-2"
-            >
-              {hotels.map((hotel) => (
-                <option key={hotel.id} value={hotel.id}>
-                  {hotel.name}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
+        {/* Modern Property Switcher */}
+        <HotelSwitcher />
       </div>
 
       <div className="flex items-center gap-3">
