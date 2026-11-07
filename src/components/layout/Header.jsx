@@ -1,5 +1,6 @@
 import React from 'react';
-import { Menu, Bell, User, LogOut } from 'lucide-react';
+import { Menu, User, LogOut } from 'lucide-react';
+import NotificationsDropdown from './NotificationsDropdown';
 import { useAuth } from '../../context/AuthContext';
 import { useHotel } from '../../context/HotelContext';
 import ProfileSettingsModal from '../users/ProfileSettingsModal';
@@ -40,10 +41,7 @@ const Header = ({ onMenuToggle }) => {
       </div>
 
       <div className="flex items-center gap-4">
-        <button className="cursor-pointer text-zinc-500 hover:text-zinc-900 relative p-1 rounded-full focus:outline-none focus:ring-2 focus:ring-zinc-900">
-          <Bell className="w-5 h-5" />
-          <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-500 ring-2 ring-white"></span>
-        </button>
+        <NotificationsDropdown />
 
         <div className="relative">
           <button 
